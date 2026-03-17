@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    container_name: slime-app
+    ports:
+      - "8080:80"
+    volumes:
+      - ./backend:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      - APP_ENV=local
+    networks:
+      - slime-network
+
+  db:
+    image: postgres:15-alpine
+    container_name: slime-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: slime
+      POSTGRES_USER: slime
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U slime"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - slime-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: slime-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - slime-network
+
+volumes:
+  db-data:
+  redis-data:
+
+networks:
+  slime-network:
+    driver: bridge
