@@ -22,7 +22,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      apiBase: 'http://localhost:8080'
+      // Keep client runtime aligned with NUXT_PUBLIC_API_BASE (and CSP connect-src).
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8080'
     }
   }
 })
