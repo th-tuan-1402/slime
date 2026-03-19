@@ -1,4 +1,4 @@
-.PHONY: up down build shell test test-coverage phpstan migrate fresh seed logs ps install openapi-export openapi-validate ci
+.PHONY: up down build shell test test-coverage phpstan migrate fresh seed logs ps install openapi-export openapi-validate ci client-dev client-build
 
 up:
 	docker compose up -d
@@ -47,3 +47,9 @@ openapi-validate:
 	npx @redocly/cli lint backend/openapi.json
 
 ci: phpstan test openapi-validate
+
+client-dev:
+	cd client && npm run dev
+
+client-build:
+	cd client && npm run build

@@ -49,6 +49,24 @@ services:
     networks:
       - slime-network
 
+  client:
+    image: node:20-alpine
+    container_name: slime-client
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./client:/app
+      - client-node-modules:/app/node_modules
+    command: sh -c "npm install --legacy-peer-deps && npm run dev"
+    environment:
+      - NUXT_PUBLIC_API_BASE=http://localhost:8080
+      - NITRO_PORT=3000
+    depends_on:
+      - app
+    networks:
+      - slime-network
+
 volumes:
   db-data:
   redis-data:
