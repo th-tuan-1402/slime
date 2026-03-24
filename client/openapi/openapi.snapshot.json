@@ -1,0 +1,232 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Slime API",
+    "version": "1.0.0",
+    "description": "Snapshot for Orval offline generation. Regenerate from backend when the contract changes (set OPENAPI_URL while Laravel + Scramble are running, then commit this file or update snapshots)."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Local API (paths are absolute from host)"
+    }
+  ],
+  "tags": [
+    { "name": "Health", "description": "Health checks" },
+    { "name": "Auth", "description": "Authentication" }
+  ],
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Health check",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HealthResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login",
+        "operationId": "postAuthLogin",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequestBody" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LoginSuccessResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Logout",
+        "operationId": "postAuthLogout",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EmptySuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Current user",
+        "operationId": "getAuthMe",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserSuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/token": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Refresh API token",
+        "operationId": "postAuthToken",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenSuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "ApiErrorResponse": {
+        "type": "object",
+        "required": ["success", "message"],
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "message": { "type": "string" },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      },
+      "UserResource": {
+        "type": "object",
+        "properties": {
+          "user_id": { "type": "integer" },
+          "login_id": { "type": "string", "nullable": true },
+          "user_name": { "type": "string", "nullable": true },
+          "administrator_flag": { "type": "integer" }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "required": ["success", "message", "data"],
+        "properties": {
+          "success": { "type": "boolean" },
+          "message": { "type": "string" },
+          "data": {
+            "type": "object",
+            "required": ["status", "timestamp"],
+            "properties": {
+              "status": { "type": "string", "example": "healthy" },
+              "timestamp": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      },
+      "LoginRequestBody": {
+        "type": "object",
+        "required": ["login_id", "password"],
+        "properties": {
+          "login_id": { "type": "string" },
+          "password": { "type": "string", "format": "password" }
+        }
+      },
+      "LoginSuccessResponse": {
+        "type": "object",
+        "required": ["success", "message", "data"],
+        "properties": {
+          "success": { "type": "boolean" },
+          "message": { "type": "string" },
+          "data": {
+            "type": "object",
+            "required": ["user", "token"],
+            "properties": {
+              "user": { "$ref": "#/components/schemas/UserResource" },
+              "token": { "type": "string" }
+            }
+          }
+        }
+      },
+      "EmptySuccessResponse": {
+        "type": "object",
+        "required": ["success", "message"],
+        "properties": {
+          "success": { "type": "boolean" },
+          "message": { "type": "string" },
+          "data": {}
+        }
+      },
+      "UserSuccessResponse": {
+        "type": "object",
+        "required": ["success", "message", "data"],
+        "properties": {
+          "success": { "type": "boolean" },
+          "message": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/UserResource" }
+        }
+      },
+      "TokenSuccessResponse": {
+        "type": "object",
+        "required": ["success", "message", "data"],
+        "properties": {
+          "success": { "type": "boolean" },
+          "message": { "type": "string" },
+          "data": {
+            "type": "object",
+            "required": ["token"],
+            "properties": {
+              "token": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
