@@ -7,12 +7,17 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "api:gen": "orval --config orval.config.mjs --tsconfig tsconfig.orval.json && node scripts/write-generated-api-index.mjs",
+    "api:gen:check": "npm run api:gen && git diff --exit-code -- src/api/generated openapi/openapi.snapshot.json"
   },
   "dependencies": {
     "@nuxt/ui": "^2.19.3",
     "nuxt": "^3.17.4",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "orval": "^7.5.0"
   }
 }
