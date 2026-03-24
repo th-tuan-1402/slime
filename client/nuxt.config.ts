@@ -3,6 +3,9 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   ssr: true,
+  experimental: {
+    appManifest: false
+  },
   modules: ['@nuxt/ui'],
   routeRules: {
     '/_nuxt/**': {
