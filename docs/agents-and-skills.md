@@ -8,6 +8,29 @@ This document explains how we use Cursor subagents and skills in this repository
 - We use subagents for multi-step role-based work.
 - We use skills for repeatable single-purpose guidance.
 
+## Definitions in this repository
+
+| Kind | Location |
+|------|----------|
+| Subagents | `.cursor/agents/*.md` |
+| Skills | `.cursor/skills/<skill-name>/SKILL.md` |
+
+After cloning, Cursor can load agents from `.cursor/agents/`. Copy or symlink skills into your
+user skills directory if you want them globally; otherwise reference paths under `.cursor/skills/`.
+
+### Subagents (`.cursor/agents/`)
+
+- `hanbai-github-common`: shared GitHub / label / `gh` conventions (readonly policy)
+- `team-lead`: orchestrates issue flow and reviews PRs
+- `dev`: implements issues and prepares PRs
+- `qa`: validates implementation with evidence
+- `pm`: reports progress, milestones, and risks (readonly by default)
+
+### Skills (`.cursor/skills/`)
+
+- `hanbai-github-common`: expanded command snippets and rules (Vietnamese/English)
+- `team-lead-agent`, `dev-agent`, `qa-agent`, `pm-agent`: detailed workflows for each role
+- `commit-code`: Conventional Commits in Japanese for this repo
 ## Subagents in this project
 
 Subagents are defined in `.cursor/agents/`:
