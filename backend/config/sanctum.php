@@ -6,7 +6,7 @@ return [
     /*
      * Sanctum authentication guard.
      */
-    'guard' => ['sanctum'],
+    'guard' => ['web'],
 
     /*
      * Domains that will receive stateful API authentication cookies.

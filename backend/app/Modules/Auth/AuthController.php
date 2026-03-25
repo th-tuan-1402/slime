@@ -37,7 +37,7 @@ final class AuthController extends AbstractApiController
     public function logout(Request $request): JsonResponse
     {
         /** @var AuthUser $user */
-        $user = $request->user();
+        $user = $request->user('sanctum');
 
         $token = $user->currentAccessToken();
         if ($token !== null) {
@@ -55,7 +55,7 @@ final class AuthController extends AbstractApiController
     public function me(Request $request): JsonResponse
     {
         /** @var AuthUser $user */
-        $user = $request->user();
+        $user = $request->user('sanctum');
 
         return $this->respondSuccess([
             'user' => $this->authEditor->toUserPayload($user),
@@ -65,7 +65,7 @@ final class AuthController extends AbstractApiController
     public function refreshToken(Request $request): JsonResponse
     {
         /** @var AuthUser $user */
-        $user = $request->user();
+        $user = $request->user('sanctum');
 
         $newToken = $this->authEditor->refreshToken($user);
 
