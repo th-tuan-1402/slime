@@ -10,6 +10,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Session and token authentication for API clients (Sanctum).
+ */
 final class AuthController extends AbstractApiController
 {
     public function __construct(
@@ -17,6 +20,9 @@ final class AuthController extends AbstractApiController
     ) {
     }
 
+    /**
+     * Authenticate with login ID and password; returns user and bearer token.
+     */
     public function login(LoginRequest $request): JsonResponse
     {
         $result = $this->authEditor->login(
@@ -34,6 +40,9 @@ final class AuthController extends AbstractApiController
         ]);
     }
 
+    /**
+     * Revoke the current access token and clear the session when present.
+     */
     public function logout(Request $request): JsonResponse
     {
         /** @var AuthUser $user */
@@ -52,6 +61,9 @@ final class AuthController extends AbstractApiController
         return $this->respondNoContent();
     }
 
+    /**
+     * Return the authenticated user as a stable API payload.
+     */
     public function me(Request $request): JsonResponse
     {
         /** @var AuthUser $user */
@@ -62,6 +74,9 @@ final class AuthController extends AbstractApiController
         ]);
     }
 
+    /**
+     * Rotate the bearer token: issue a new token and invalidate the old one.
+     */
     public function refreshToken(Request $request): JsonResponse
     {
         /** @var AuthUser $user */
