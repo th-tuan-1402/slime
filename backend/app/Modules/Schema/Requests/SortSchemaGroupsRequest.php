@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Schema\Requests;
 
 use App\Http\BaseFormRequest;
+use App\Modules\Schema\Dtos\SortSchemaGroupsDto;
 
 final class SortSchemaGroupsRequest extends BaseFormRequest
 {
@@ -19,14 +20,12 @@ final class SortSchemaGroupsRequest extends BaseFormRequest
         ];
     }
 
-    public function toDto(): object
+    public function toDto(): SortSchemaGroupsDto
     {
         /** @var array{group_ids:list<int>} $data */
         $data = $this->validated();
 
-        return (object) [
-            'groupIds' => array_map('intval', $data['group_ids']),
-        ];
+        return new SortSchemaGroupsDto(array_map('intval', $data['group_ids']));
     }
 }
 

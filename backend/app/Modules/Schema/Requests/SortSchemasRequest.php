@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Schema\Requests;
 
 use App\Http\BaseFormRequest;
+use App\Modules\Schema\Dtos\SortSchemasDto;
 
 final class SortSchemasRequest extends BaseFormRequest
 {
@@ -19,14 +20,12 @@ final class SortSchemasRequest extends BaseFormRequest
         ];
     }
 
-    public function toDto(): object
+    public function toDto(): SortSchemasDto
     {
         /** @var array{schema_ids:list<int>} $data */
         $data = $this->validated();
 
-        return (object) [
-            'schemaIds' => array_map('intval', $data['schema_ids']),
-        ];
+        return new SortSchemasDto(array_map('intval', $data['schema_ids']));
     }
 }
 

@@ -62,8 +62,6 @@ final class SchemaController extends AbstractApiController
     public function sort(SortSchemasRequest $request): JsonResponse
     {
         $dto = $request->toDto();
-
-        /** @var list<int> $schemaIds */
         $schemaIds = $dto->schemaIds;
 
         $this->schemaEditor->sort($schemaIds);

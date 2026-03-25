@@ -64,8 +64,6 @@ final class SchemaGroupController extends AbstractApiController
     public function sort(SortSchemaGroupsRequest $request): JsonResponse
     {
         $dto = $request->toDto();
-
-        /** @var list<int> $groupIds */
         $groupIds = $dto->groupIds;
 
         $this->groupEditor->sort($groupIds);

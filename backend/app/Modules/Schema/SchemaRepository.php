@@ -48,6 +48,9 @@ final class SchemaRepository
         return $row !== null ? (array) $row : null;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function insert(array $data): int
     {
         /** @var int $id */
@@ -55,6 +58,9 @@ final class SchemaRepository
         return $id;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function update(int $schemaId, array $data): int
     {
         return (int) $this->db->table('db_schema')
