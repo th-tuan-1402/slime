@@ -2,6 +2,15 @@
 
 Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
 
+## API client (Orval)
+
+- **Generate:** `npm run api:gen` — reads `OPENAPI_URL` when set; otherwise uses `openapi/openapi.snapshot.json`.
+- **Output:** `src/api/generated/` (`endpoints.ts`, `model/`, `index.ts`). Do not edit generated files by hand.
+- **HTTP wrapper:** `src/api/client.ts` (Orval mutator) + `src/plugins/api.ts` (Nuxt plugin injects `Authorization` and `X-Tenant-ID` from cookies/state).
+- **Regenerate snapshot:** Point `OPENAPI_URL` at the live OpenAPI document (e.g. Laravel Scramble), run `npm run api:gen`, then commit updated `openapi/openapi.snapshot.json` and `src/api/generated/` if the contract changed.
+- **Drift check (CI):** install deps, run `npm run api:gen:check` — fails if generated output or snapshot differs from git.
+- **Config:** `orval.config.mjs` uses `tsconfig.orval.json` so generation does not require a prior `nuxt prepare`.
+
 ## Setup
 
 Make sure to install dependencies:
