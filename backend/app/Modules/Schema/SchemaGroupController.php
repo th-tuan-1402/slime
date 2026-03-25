@@ -56,7 +56,7 @@ final class SchemaGroupController extends AbstractApiController
 
     public function destroy(int $id): JsonResponse
     {
-        $this->groupEditor->delete($id, $this->currentUserId());
+        $this->groupEditor->delete($id);
 
         return $this->respondNoContent();
     }

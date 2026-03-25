@@ -86,9 +86,9 @@ final class SchemaGroupEditor
         });
     }
 
-    public function delete(int $dbgId, int $actorUserId): void
+    public function delete(int $dbgId): void
     {
-        $this->db->transaction(function () use ($dbgId, $actorUserId): void {
+        $this->db->transaction(function () use ($dbgId): void {
             $existing = $this->groupRepository->find($dbgId);
             if ($existing === null) {
                 throw new NotFoundHttpException('Group not found.');

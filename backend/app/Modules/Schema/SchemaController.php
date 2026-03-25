@@ -9,7 +9,6 @@ use App\Modules\Schema\Requests\SortSchemasRequest;
 use App\Modules\Schema\Requests\StoreSchemaRequest;
 use App\Modules\Schema\Requests\UpdateSchemaRequest;
 use Illuminate\Http\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final class SchemaController extends AbstractApiController
