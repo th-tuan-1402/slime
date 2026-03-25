@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $approval_point_id
  * @property int|null $approval_status_id
  */
-class DynamicRecordModel extends BaseTenantModel
+final class DynamicRecordModel extends BaseTenantModel
 {
     /** @var string */
     protected $primaryKey = 'record_id';
@@ -58,7 +58,7 @@ class DynamicRecordModel extends BaseTenantModel
      */
     public static function forSchema(int $schemaId): static
     {
-        $instance = new static();
+        $instance = new self();
         $instance->setTable('record_' . $schemaId);
 
         return $instance;
