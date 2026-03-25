@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http;
 
 use App\Enums\RoleKey;
+use App\Models\User;
 use Illuminate\Auth\AuthenticationException;
-use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Http\JsonResponse;
@@ -105,7 +105,7 @@ abstract class AbstractApiController extends Controller
     /**
      * Return a paginated list response with metadata.
      *
-     * @param LengthAwarePaginator $paginator The paginator instance from Eloquent.
+     * @param LengthAwarePaginator<int, mixed> $paginator The paginator instance from Eloquent.
      * @return JsonResponse HTTP 200 with `{success, message, data, meta}` envelope.
      */
     protected function respondPaginated(LengthAwarePaginator $paginator): JsonResponse
@@ -142,8 +142,7 @@ abstract class AbstractApiController extends Controller
     {
         $user = $this->currentUser();
 
-        /** @var string|null $tenantId */
-        $tenantId = $user->tenant_id ?? null; // @phpstan-ignore-line
+        $tenantId = $user->tenant_id;
 
         if ($tenantId === null || $tenantId === '') {
             throw new \RuntimeException('Tenant ID is not available on the authenticated user.');
@@ -155,10 +154,10 @@ abstract class AbstractApiController extends Controller
     /**
      * Get the currently authenticated user.
      *
-     * @return Authenticatable The authenticated user model.
+     * @return User The authenticated user model.
      * @throws AuthenticationException If no user is authenticated.
      */
-    protected function currentUser(): Authenticatable
+    protected function currentUser(): User
     {
         $user = request()->user();
 
@@ -166,6 +165,7 @@ abstract class AbstractApiController extends Controller
             throw new AuthenticationException('Unauthenticated.');
         }
 
+        /** @var User $user */
         return $user;
     }
 
@@ -201,8 +201,7 @@ abstract class AbstractApiController extends Controller
             $roles,
         );
 
-        /** @var string $userRole */
-        $userRole = $user->role ?? ''; // @phpstan-ignore-line
+        $userRole = $user->role ?? '';
 
         if (!in_array($userRole, $allowed, true)) {
             throw new AccessDeniedHttpException('Insufficient permissions.');
