@@ -6,6 +6,7 @@ namespace App\Modules\Schema\Requests;
 
 use App\Http\BaseFormRequest;
 use App\Modules\Schema\Dtos\CreateSchemaDto;
+use Illuminate\Validation\Rule;
 
 final class StoreSchemaRequest extends BaseFormRequest
 {
@@ -18,7 +19,7 @@ final class StoreSchemaRequest extends BaseFormRequest
             'dbg_id' => ['required', 'integer', 'min:0'],
             'db_schema_name' => ['required', 'string', 'min:1', 'max:255'],
             'db_schema_comment' => ['nullable', 'string', 'max:2000'],
-            'schema_type' => ['sometimes', 'integer', 'in:0,1,2,3'],
+            'schema_type' => ['sometimes', 'integer', Rule::in([0, 1, 2, 3])],
         ];
     }
 
