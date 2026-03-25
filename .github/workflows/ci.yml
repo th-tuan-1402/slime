@@ -67,3 +67,31 @@ jobs:
         run: |
           php artisan scramble:export --path=openapi.json
           npx @redocly/cli lint openapi.json
+
+  client:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Nuxt typecheck
+        run: npm run typecheck
+
+      - name: Build Storybook
+        run: npm run build-storybook

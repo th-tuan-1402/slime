@@ -1,6 +1,6 @@
-# Slime - Hanbai Migration API
+# Slime - Hanbai Migration
 
-Headless API backend built with Laravel 11 + PostgreSQL + Redis.
+Headless API backend (Laravel 11 + PostgreSQL + Redis) and Nuxt 3 frontend (Tailwind + Nuxt UI).
 
 ## Prerequisites
 
@@ -20,15 +20,16 @@ make up
 make migrate
 ```
 
-The API will be available at `http://localhost:8080`.
+The API will be available at `http://localhost:8080`, and the client at `http://localhost:3000` when running via Docker.
 
 ## Services
 
-| Service    | Container    | Port  |
-|------------|-------------|-------|
-| App (PHP)  | slime-app   | 8080  |
-| PostgreSQL | slime-db    | 5432  |
-| Redis      | slime-redis | 6379  |
+| Service       | Container     | Port  |
+|---------------|---------------|-------|
+| App (PHP)     | slime-app     | 8080  |
+| Client (Nuxt) | slime-client  | 3000  |
+| PostgreSQL    | slime-db      | 5432  |
+| Redis         | slime-redis   | 6379  |
 
 ## Common Commands
 
@@ -49,6 +50,8 @@ make install           # Install composer dependencies
 make openapi-export    # Export OpenAPI spec
 make openapi-validate  # Export and validate OpenAPI spec
 make ci                # Run full CI locally
+make client-dev        # Run Nuxt dev server (from host)
+make client-build      # Build Nuxt for production
 ```
 
 ## Environment
@@ -97,10 +100,11 @@ make ci    # Run full CI locally (phpstan + test + openapi-validate)
 ```
 slime/
 ├── backend/           # Laravel API application
+├── client/            # Nuxt 3 app (Tailwind + Nuxt UI)
 ├── docker/
 │   └── app/
 │       └── Dockerfile # PHP 8.2 + Apache
-├── docker-compose.yml # App + PostgreSQL + Redis
+├── docker-compose.yml # App + Client + PostgreSQL + Redis
 ├── Makefile           # Dev commands
 └── README.md
 ```

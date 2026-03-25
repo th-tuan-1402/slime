@@ -19,8 +19,8 @@ class UserGroupRelationModel extends BaseTenantModel
     /** @var string */
     protected $table = 'user_group_relation';
 
-    /** @var string|null */
-    protected $primaryKey = null;
+    /** @var string */
+    protected $primaryKey = 'user_id';
 
     /** @var bool */
     public $incrementing = false;
