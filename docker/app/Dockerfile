@@ -31,8 +31,13 @@ WORKDIR /var/www/html
 
 COPY backend/ .
 
-RUN composer install --no-interaction --optimize-autoloader
+RUN if [ -f composer.json ]; then \
+      composer install --no-interaction --optimize-autoloader; \
+    else \
+      echo "composer.json not found, skipping composer install for scaffold phase"; \
+    fi
 
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 EXPOSE 80
