@@ -7,7 +7,7 @@ export default defineNuxtConfig({
   experimental: {
     appManifest: false
   },
-  modules: ['@nuxt/ui'],
+  modules: ['@nuxt/ui', '@pinia/nuxt'],
   routeRules: {
     '/_nuxt/**': {
       headers: {
