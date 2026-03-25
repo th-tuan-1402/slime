@@ -31,6 +31,21 @@ user skills directory if you want them globally; otherwise reference paths under
 - `hanbai-github-common`: expanded command snippets and rules (Vietnamese/English)
 - `team-lead-agent`, `dev-agent`, `qa-agent`, `pm-agent`: detailed workflows for each role
 - `commit-code`: Conventional Commits in Japanese for this repo
+## Subagents in this project
+
+Subagents are defined in `.cursor/agents/`:
+
+- `team-lead`: orchestrates issue flow and reviews PRs
+- `dev`: implements issues and prepares PRs
+- `qa`: validates implementation with evidence
+- `pm`: reports progress, milestones, and risks
+- `hanbai-github-common`: shared conventions used by all agents
+
+## Skills in this project
+
+Skills are reusable instructions in `.cursor/skills/` and user-level skills.
+Use a skill when the task is focused and repeatable. Use a subagent when the
+task is long, role-driven, or needs isolated context.
 
 ## Invocation examples
 
@@ -76,3 +91,4 @@ Shared rules:
    - pass -> `status/done` and close issue
    - fail -> return to `phase:dev` with reproduction details
 7. PM reports progress by milestone and risk status.
+
