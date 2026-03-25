@@ -6,4 +6,6 @@ rules:
   info-license: off
   no-server-example.com: off
   operation-4xx-response: off
+  # Scramble emits string literals for Laravel `in` / Rule::in enums while keeping type: integer.
+  no-enum-type-mismatch: off
 
