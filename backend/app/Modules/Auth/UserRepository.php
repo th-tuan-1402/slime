@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\DB;
 
 final class UserRepository
 {
+    private const PASSWORD_TYPE_VALID = 1;
+
     public function findActiveUserByLoginId(string $loginId): ?AuthUser
     {
         /** @var AuthUser|null $user */
@@ -26,6 +28,7 @@ final class UserRepository
         $row = DB::table('password_info')
             ->select(['password'])
             ->where('user_id', '=', $userId)
+            ->where('password_type', '=', self::PASSWORD_TYPE_VALID)
             ->orderByDesc('regist_date')
             ->first();
 

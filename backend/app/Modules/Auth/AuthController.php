@@ -39,7 +39,15 @@ final class AuthController extends AbstractApiController
         /** @var AuthUser $user */
         $user = $request->user();
 
-        $user->currentAccessToken()->delete();
+        $token = $user->currentAccessToken();
+        if ($token !== null) {
+            $token->delete();
+        }
+
+        if ($request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
 
         return $this->respondNoContent();
     }

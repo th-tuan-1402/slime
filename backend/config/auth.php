@@ -6,11 +6,21 @@ use App\Modules\Auth\AuthUser;
 
 return [
     'defaults' => [
-        'guard' => 'sanctum',
+        'guard' => 'web',
         'passwords' => 'users',
     ],
 
     'guards' => [
+        'web' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
+
+        'api' => [
+            'driver' => 'sanctum',
+            'provider' => 'users',
+        ],
+
         'sanctum' => [
             'driver' => 'sanctum',
             'provider' => 'users',
