@@ -50,6 +50,7 @@
             "@php artisan test"
         ],
         "post-autoload-dump": [
+        "@php -r \"@mkdir(__DIR__ . '/bootstrap/cache', 0777, true); @mkdir(__DIR__ . '/storage/framework/cache', 0777, true); @mkdir(__DIR__ . '/storage/framework/sessions', 0777, true); @mkdir(__DIR__ . '/storage/framework/views', 0777, true); @mkdir(__DIR__ . '/storage/logs', 0777, true);\"",
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
         ],
