@@ -11,6 +11,9 @@ use App\Modules\Schema\Requests\UpdateSchemaRequest;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
+/**
+ * CRUD and sort endpoints for db_schema records (tenant DB).
+ */
 final class SchemaController extends AbstractApiController
 {
     public function __construct(
@@ -19,6 +22,9 @@ final class SchemaController extends AbstractApiController
     ) {
     }
 
+    /**
+     * List schemas at root level, optionally filtered by schema group.
+     */
     public function index(): JsonResponse
     {
         $dbgId = request()->query('group_id');
@@ -29,6 +35,9 @@ final class SchemaController extends AbstractApiController
         return $this->respondSuccess($items);
     }
 
+    /**
+     * Create a schema and provision its record table when possible.
+     */
     public function store(StoreSchemaRequest $request): JsonResponse
     {
         /** @var \App\Modules\Schema\Dtos\CreateSchemaDto $dto */
@@ -39,6 +48,9 @@ final class SchemaController extends AbstractApiController
         return $this->respondCreated($schema);
     }
 
+    /**
+     * Get a single schema by ID.
+     */
     public function show(int $id): JsonResponse
     {
         $schema = $this->schemaRepository->find($id);
@@ -49,6 +61,9 @@ final class SchemaController extends AbstractApiController
         return $this->respondSuccess($schema);
     }
 
+    /**
+     * Update an existing schema.
+     */
     public function update(int $id, UpdateSchemaRequest $request): JsonResponse
     {
         /** @var \App\Modules\Schema\Dtos\UpdateSchemaDto $dto */
@@ -59,6 +74,9 @@ final class SchemaController extends AbstractApiController
         return $this->respondSuccess($schema);
     }
 
+    /**
+     * Reorder schemas using an ordered list of schema IDs.
+     */
     public function sort(SortSchemasRequest $request): JsonResponse
     {
         $dto = $request->toDto();
