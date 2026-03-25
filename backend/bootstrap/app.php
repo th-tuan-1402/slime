@@ -11,6 +11,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 return Application::configure(basePath: dirname(__DIR__))
     ->withProviders([
         \App\Providers\ModuleServiceProvider::class,
+        \Dedoc\Scramble\ScrambleServiceProvider::class,
     ])
     ->withRouting(
         api: __DIR__ . '/../routes/api.php',

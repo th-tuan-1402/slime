@@ -23,6 +23,7 @@ Thumbs.db
 /backend/storage/framework/views/*
 /backend/storage/logs/*
 /backend/bootstrap/cache/*
+/backend/openapi.json
 
 # Testing
 /backend/.phpunit.result.cache
