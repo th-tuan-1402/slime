@@ -303,17 +303,10 @@ final class FieldRepository
         }
         if ($visibleRecordIds !== null) {
             if ($visibleRecordIds === []) {
-                /** @var list<array{id:int,display:string}> $emptyItems */
-                $emptyItems = [];
-                return [
-                    'items' => $emptyItems,
-                    'page' => $page,
-                    'limit' => $limit,
-                    'total' => 0,
-                ];
+                $builder->whereRaw('1 = 0');
+            } else {
+                $builder->whereIn('record_id', $visibleRecordIds);
             }
-
-            $builder->whereIn('record_id', $visibleRecordIds);
         }
 
         $total = (int) (clone $builder)->count();
