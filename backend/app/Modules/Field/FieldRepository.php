@@ -278,6 +278,7 @@ final class FieldRepository
 
     /**
      * @return array{items:list<array{id:int,display:string}>,page:int,limit:int,total:int}
+     * @param list<int>|null $visibleRecordIds
      */
     public function searchLinkedRecords(
         int $schemaId,
@@ -285,6 +286,7 @@ final class FieldRepository
         string $query,
         int $page,
         int $limit,
+        ?array $visibleRecordIds = null,
     ): array {
         $tableName = "record_{$schemaId}";
         if (Schema::connection('tenant')->hasTable($tableName) !== true) {
@@ -297,6 +299,13 @@ final class FieldRepository
             $builder->addSelect($displayColumn);
             if ($query !== '') {
                 $builder->where($displayColumn, 'like', '%' . $query . '%');
+            }
+        }
+        if ($visibleRecordIds !== null) {
+            if ($visibleRecordIds === []) {
+                $builder->whereRaw('1 = 0');
+            } else {
+                $builder->whereIn('record_id', $visibleRecordIds);
             }
         }
 
