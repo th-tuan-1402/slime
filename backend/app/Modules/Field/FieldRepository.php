@@ -303,8 +303,10 @@ final class FieldRepository
         }
         if ($visibleRecordIds !== null) {
             if ($visibleRecordIds === []) {
+                /** @var list<array{id:int,display:string}> $emptyItems */
+                $emptyItems = [];
                 return [
-                    'items' => [],
+                    'items' => $emptyItems,
                     'page' => $page,
                     'limit' => $limit,
                     'total' => 0,
