@@ -22,6 +22,7 @@ final class User extends Authenticatable
     protected $fillable = [
         'tenant_id',
         'role',
+        'visible_record_ids',
         'email',
         'password',
         'name',

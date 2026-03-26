@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Field;
 
+use App\Enums\RoleKey;
 use App\Http\AbstractApiController;
 use App\Modules\Field\Requests\SortFieldsRequest;
 use App\Modules\Field\Requests\SearchFieldLinksRequest;
@@ -90,6 +91,7 @@ final class FieldController extends AbstractApiController
      */
     public function selections(int $fieldId): JsonResponse
     {
+        $this->authorizeFieldRead();
         return $this->respondSuccess($this->fieldSelectionSearcher->selections($fieldId));
     }
 
@@ -98,6 +100,7 @@ final class FieldController extends AbstractApiController
      */
     public function updateSelections(int $fieldId, UpdateFieldSelectionsRequest $request): JsonResponse
     {
+        $this->authorizeFieldWrite();
         /** @var \App\Modules\Field\Dtos\UpdateFieldSelectionsDto $dto */
         $dto = $request->toDto();
         $data = $this->fieldSelectionEditor->updateSelections($fieldId, $dto, $this->currentUserId());
@@ -109,6 +112,7 @@ final class FieldController extends AbstractApiController
      */
     public function sequence(int $fieldId): JsonResponse
     {
+        $this->authorizeFieldRead();
         return $this->respondSuccess($this->fieldSelectionSearcher->sequence($fieldId));
     }
 
@@ -117,6 +121,7 @@ final class FieldController extends AbstractApiController
      */
     public function updateSequence(int $fieldId, UpdateFieldSequenceRequest $request): JsonResponse
     {
+        $this->authorizeFieldWrite();
         /** @var \App\Modules\Field\Dtos\UpdateFieldSequenceDto $dto */
         $dto = $request->toDto();
         $data = $this->fieldSelectionEditor->updateSequence($fieldId, $dto, $this->currentUserId());
@@ -128,10 +133,52 @@ final class FieldController extends AbstractApiController
      */
     public function searchLinks(int $fieldId, SearchFieldLinksRequest $request): JsonResponse
     {
+        $this->authorizeFieldRead();
         /** @var \App\Modules\Field\Dtos\SearchFieldLinksDto $dto */
         $dto = $request->toDto();
-        $data = $this->fieldSelectionSearcher->searchLinks($fieldId, $dto);
+        $data = $this->fieldSelectionSearcher->searchLinks(
+            $fieldId,
+            $dto,
+            $this->currentVisibleRecordIds(),
+        );
         return $this->respondSuccess($data);
+    }
+
+    private function authorizeFieldRead(): void
+    {
+        $this->authorizeRole(RoleKey::Admin, RoleKey::Manager, RoleKey::Staff, RoleKey::ReadOnly);
+    }
+
+    private function authorizeFieldWrite(): void
+    {
+        $this->authorizeRole(RoleKey::Admin, RoleKey::Manager);
+    }
+
+    /**
+     * @return list<int>|null
+     */
+    private function currentVisibleRecordIds(): ?array
+    {
+        $visibleIds = $this->currentUser()->visible_record_ids ?? null;
+        if ($visibleIds === null || $visibleIds === '') {
+            return null;
+        }
+
+        if (is_array($visibleIds)) {
+            $raw = $visibleIds;
+        } else {
+            $raw = explode(',', (string) $visibleIds);
+        }
+
+        $ids = [];
+        foreach ($raw as $value) {
+            if ($value === null || $value === '') {
+                continue;
+            }
+            $ids[] = (int) $value;
+        }
+
+        return array_values(array_unique($ids));
     }
 }
 

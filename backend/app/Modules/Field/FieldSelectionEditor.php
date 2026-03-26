@@ -9,6 +9,7 @@ use App\Modules\Field\Dtos\UpdateFieldSequenceDto;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 final class FieldSelectionEditor
 {
@@ -25,7 +26,7 @@ final class FieldSelectionEditor
      */
     public function updateSelections(int $fieldId, UpdateFieldSelectionsDto $dto, int $actorUserId): array
     {
-        $this->assertFieldExists($fieldId);
+        $this->assertFieldDataType($fieldId, FieldDataType::SELECTION);
 
         return $this->db->transaction(function () use ($fieldId, $dto, $actorUserId): array {
             $this->fieldRepository->replaceSelections($fieldId, $dto->options, $actorUserId);
@@ -42,7 +43,7 @@ final class FieldSelectionEditor
      */
     public function updateSequence(int $fieldId, UpdateFieldSequenceDto $dto, int $actorUserId): array
     {
-        $this->assertFieldExists($fieldId);
+        $this->assertFieldDataType($fieldId, FieldDataType::SEQUENCE);
 
         return $this->db->transaction(function () use ($fieldId, $dto, $actorUserId): array {
             $this->fieldRepository->upsertSequenceConfig($fieldId, [
@@ -62,10 +63,15 @@ final class FieldSelectionEditor
         });
     }
 
-    private function assertFieldExists(int $fieldId): void
+    private function assertFieldDataType(int $fieldId, int $expectedDataType): void
     {
-        if ($this->fieldRepository->findById($fieldId) === null) {
+        $field = $this->fieldRepository->findById($fieldId);
+        if ($field === null) {
             throw new NotFoundHttpException('Field not found.');
+        }
+
+        if ((int) ($field['data_type'] ?? -1) !== $expectedDataType) {
+            throw new UnprocessableEntityHttpException('Field type does not match endpoint.');
         }
     }
 }

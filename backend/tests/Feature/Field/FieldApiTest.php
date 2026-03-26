@@ -46,6 +46,8 @@ final class FieldApiTest extends TestCase
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
+            $table->string('role')->nullable();
+            $table->string('visible_record_ids')->nullable();
             $table->timestamps();
         });
 
@@ -148,12 +150,14 @@ final class FieldApiTest extends TestCase
         ]);
     }
 
-    private function actingAsSanctumUser(): void
+    private function actingAsSanctumUser(string $role = 'admin', ?string $visibleRecordIds = null): void
     {
         $user = User::query()->create([
             'name' => 'Field QA',
-            'email' => 'field@example.test',
+            'email' => sprintf('field+%s@example.test', uniqid('', true)),
             'password' => 'secret',
+            'role' => $role,
+            'visible_record_ids' => $visibleRecordIds,
         ]);
         Sanctum::actingAs($user);
     }
@@ -224,9 +228,9 @@ final class FieldApiTest extends TestCase
     {
         $this->actingAsSanctumUser();
 
-        $selectionFieldId = $this->createField('Status');
-        $sequenceFieldId = $this->createField('Invoice No');
-        $linkFieldId = $this->createField('Customer Link');
+        $selectionFieldId = $this->createField('Status', 8);
+        $sequenceFieldId = $this->createField('Invoice No', 5);
+        $linkFieldId = $this->createField('Customer Link', 4);
 
         DB::connection('tenant')->table('field_configs')
             ->where('field_id', '=', $linkFieldId)
@@ -267,7 +271,7 @@ final class FieldApiTest extends TestCase
     public function testSelectionSequenceAndLinkEndpoints_ValidationAndNotFound(): void
     {
         $this->actingAsSanctumUser();
-        $fieldId = $this->createField('Validation Field');
+        $fieldId = $this->createField('Validation Field', 8);
 
         $this->putJson("/api/v1/fields/{$fieldId}/selections", [
             'options' => [
@@ -288,11 +292,72 @@ final class FieldApiTest extends TestCase
         $this->getJson('/api/v1/fields/999999/links/search')->assertStatus(404);
     }
 
-    private function createField(string $name): int
+    public function testSelectionSequenceAndLinkEndpoints_FieldTypeMismatch_Returns422(): void
+    {
+        $this->actingAsSanctumUser();
+
+        $textFieldId = $this->createField('Plain Text', 0);
+        $selectionFieldId = $this->createField('Status', 8);
+        $linkFieldId = $this->createField('Customer Link', 4);
+
+        DB::connection('tenant')->table('field_configs')
+            ->where('field_id', '=', $linkFieldId)
+            ->update([
+                'link_schema_id' => 20,
+                'link_display_field_id' => 2001,
+            ]);
+
+        $this->getJson("/api/v1/fields/{$textFieldId}/selections")->assertStatus(422);
+        $this->putJson("/api/v1/fields/{$textFieldId}/selections", ['options' => []])->assertStatus(422);
+        $this->getJson("/api/v1/fields/{$selectionFieldId}/sequences")->assertStatus(422);
+        $this->putJson("/api/v1/fields/{$selectionFieldId}/sequences", [
+            'padding' => 2,
+            'next_value' => 1,
+            'step' => 1,
+            'reset_policy' => 'none',
+        ])->assertStatus(422);
+        $this->getJson("/api/v1/fields/{$selectionFieldId}/links/search")->assertStatus(422);
+    }
+
+    public function testSelectionSequenceAndLinkEndpoints_AuthorizationMatrix(): void
+    {
+        $this->actingAsSanctumUser();
+        $selectionFieldId = $this->createField('Status', 8);
+        $sequenceFieldId = $this->createField('Invoice No', 5);
+        $linkFieldId = $this->createField('Customer Link', 4);
+
+        DB::connection('tenant')->table('field_configs')
+            ->where('field_id', '=', $linkFieldId)
+            ->update([
+                'link_schema_id' => 20,
+                'link_display_field_id' => 2001,
+            ]);
+
+        $this->actingAsSanctumUser('readonly', '1,3');
+
+        $this->getJson("/api/v1/fields/{$selectionFieldId}/selections")->assertStatus(200);
+        $this->getJson("/api/v1/fields/{$sequenceFieldId}/sequences")->assertStatus(200);
+        $this->putJson("/api/v1/fields/{$selectionFieldId}/selections", [
+            'options' => [['value' => 'open', 'label' => 'Open', 'order' => 0, 'is_active' => true]],
+        ])->assertStatus(403);
+        $this->putJson("/api/v1/fields/{$sequenceFieldId}/sequences", [
+            'padding' => 6,
+            'next_value' => 101,
+            'step' => 2,
+            'reset_policy' => 'monthly',
+        ])->assertStatus(403);
+
+        $this->getJson("/api/v1/fields/{$linkFieldId}/links/search?q=Alpha&page=1&limit=10")
+            ->assertStatus(200)
+            ->assertJsonPath('data.total', 2)
+            ->assertJsonMissing(['id' => 2]);
+    }
+
+    private function createField(string $name, int $dataType = 0): int
     {
         $create = $this->postJson('/api/v1/schemas/10/fields', [
             'field_name' => $name,
-            'data_type' => 0,
+            'data_type' => $dataType,
         ])->assertStatus(201);
 
         return (int) $create->json('data.field_id');
