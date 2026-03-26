@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Field;
 
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final class FieldRepository
 {
@@ -39,6 +42,18 @@ final class FieldRepository
     {
         $row = $this->db->table('db_field')
             ->where('db_schema_id', '=', $schemaId)
+            ->where('field_id', '=', $fieldId)
+            ->first();
+
+        return $row !== null ? (array) $row : null;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function findById(int $fieldId): ?array
+    {
+        $row = $this->db->table('db_field')
             ->where('field_id', '=', $fieldId)
             ->first();
 
@@ -132,6 +147,186 @@ final class FieldRepository
                 ->where('field_id', '=', $fieldId)
                 ->update(['db_field_order' => $index + 1]);
         }
+    }
+
+    /**
+     * @return list<array{id:int,value:string,label:string,order:int,isActive:bool}>
+     */
+    public function listSelections(int $fieldId): array
+    {
+        /** @var list<array{id:int,value:string,label:string,order:int,isActive:bool}> $rows */
+        $rows = $this->db->table('field_selection')
+            ->where('field_id', '=', $fieldId)
+            ->orderBy('selection_order')
+            ->get()
+            ->map(static function (object $row): array {
+                $data = (array) $row;
+
+                return [
+                    'id' => (int) ($data['selection_id'] ?? 0),
+                    'value' => (string) ($data['selection_value'] ?? ''),
+                    'label' => (string) ($data['selection_label'] ?? ''),
+                    'order' => (int) ($data['selection_order'] ?? 0),
+                    'isActive' => ((int) ($data['is_active'] ?? 1)) === 1,
+                ];
+            })
+            ->all();
+
+        return $rows;
+    }
+
+    /**
+     * @param list<array{value:string,label:string,order:int,is_active:bool}> $options
+     */
+    public function replaceSelections(int $fieldId, array $options, int $actorUserId): void
+    {
+        $this->db->table('field_selection')->where('field_id', '=', $fieldId)->delete();
+
+        $now = Carbon::now();
+        $rows = array_map(
+            static fn(array $option): array => [
+                'field_id' => $fieldId,
+                'selection_value' => $option['value'],
+                'selection_label' => $option['label'],
+                'selection_order' => $option['order'],
+                'is_active' => $option['is_active'] ? 1 : 0,
+                'regist_user_id' => $actorUserId,
+                'regist_date' => $now,
+                'update_user_id' => $actorUserId,
+                'update_date' => $now,
+            ],
+            $options,
+        );
+
+        $this->db->table('field_selection')->insert($rows);
+    }
+
+    /**
+     * @return array{prefix:?string,padding:int,nextValue:int,step:int,resetPolicy:string}
+     */
+    public function findSequenceConfig(int $fieldId): array
+    {
+        $config = $this->findFieldConfig($fieldId);
+        if ($config === null) {
+            return [
+                'prefix' => null,
+                'padding' => 1,
+                'nextValue' => 1,
+                'step' => 1,
+                'resetPolicy' => 'none',
+            ];
+        }
+
+        return [
+            'prefix' => array_key_exists('sequence_prefix', $config) ? ($config['sequence_prefix'] !== null ? (string) $config['sequence_prefix'] : null) : null,
+            'padding' => (int) ($config['sequence_padding'] ?? 1),
+            'nextValue' => (int) ($config['sequence_next_value'] ?? 1),
+            'step' => (int) ($config['sequence_step'] ?? 1),
+            'resetPolicy' => (string) ($config['sequence_reset_policy'] ?? 'none'),
+        ];
+    }
+
+    /**
+     * @param array<string,mixed> $data
+     */
+    public function upsertSequenceConfig(int $fieldId, array $data): void
+    {
+        $this->upsertFieldConfig($fieldId, $data);
+    }
+
+    public function findLinkTargetSchemaId(int $fieldId): ?int
+    {
+        $config = $this->findFieldConfig($fieldId);
+        if ($config === null) {
+            return null;
+        }
+
+        $candidates = [
+            $config['link_schema_id'] ?? null,
+            $config['link_db_schema_id'] ?? null,
+            $config['target_schema_id'] ?? null,
+        ];
+        foreach ($candidates as $candidate) {
+            if ($candidate !== null && $candidate !== '') {
+                return (int) $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    public function findLinkDisplayFieldId(int $fieldId): ?int
+    {
+        $config = $this->findFieldConfig($fieldId);
+        if ($config === null) {
+            return null;
+        }
+
+        $candidates = [
+            $config['link_display_field_id'] ?? null,
+            $config['display_field_id'] ?? null,
+            $config['target_display_field_id'] ?? null,
+        ];
+        foreach ($candidates as $candidate) {
+            if ($candidate !== null && $candidate !== '') {
+                return (int) $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{items:list<array{id:int,display:string}>,page:int,limit:int,total:int}
+     */
+    public function searchLinkedRecords(
+        int $schemaId,
+        ?int $displayFieldId,
+        string $query,
+        int $page,
+        int $limit,
+    ): array {
+        $tableName = "record_{$schemaId}";
+        if (Schema::connection('tenant')->hasTable($tableName) !== true) {
+            throw new NotFoundHttpException('Link target records are not available.');
+        }
+
+        $displayColumn = $displayFieldId !== null ? "data_0_{$displayFieldId}" : null;
+        $builder = $this->db->table($tableName)->select('record_id');
+        if ($displayColumn !== null && Schema::connection('tenant')->hasColumn($tableName, $displayColumn) === true) {
+            $builder->addSelect($displayColumn);
+            if ($query !== '') {
+                $builder->where($displayColumn, 'like', '%' . $query . '%');
+            }
+        }
+
+        $total = (int) (clone $builder)->count();
+        $offset = ($page - 1) * $limit;
+
+        $rows = $builder
+            ->orderBy('record_id')
+            ->offset($offset)
+            ->limit($limit)
+            ->get()
+            ->map(static function (object $row) use ($displayColumn): array {
+                $data = (array) $row;
+                $display = $displayColumn !== null && array_key_exists($displayColumn, $data)
+                    ? (string) ($data[$displayColumn] ?? '')
+                    : (string) $data['record_id'];
+
+                return [
+                    'id' => (int) $data['record_id'],
+                    'display' => $display,
+                ];
+            })
+            ->all();
+
+        return [
+            'items' => array_values($rows),
+            'page' => $page,
+            'limit' => $limit,
+            'total' => $total,
+        ];
     }
 }
 

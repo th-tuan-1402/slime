@@ -97,6 +97,26 @@ final class FieldApiTest extends TestCase
             $table->integer('field_id');
             $table->integer('is_required')->default(0);
             $table->integer('max_length')->nullable();
+            $table->string('sequence_prefix')->nullable();
+            $table->integer('sequence_padding')->default(1);
+            $table->integer('sequence_next_value')->default(1);
+            $table->integer('sequence_step')->default(1);
+            $table->string('sequence_reset_policy')->default('none');
+            $table->integer('link_schema_id')->nullable();
+            $table->integer('link_display_field_id')->nullable();
+            $table->integer('update_user_id')->nullable();
+            $table->timestamp('update_date')->nullable();
+        });
+
+        Schema::connection('tenant')->create('field_selection', static function (Blueprint $table): void {
+            $table->increments('selection_id');
+            $table->integer('field_id');
+            $table->string('selection_value');
+            $table->string('selection_label');
+            $table->integer('selection_order')->default(0);
+            $table->integer('is_active')->default(1);
+            $table->integer('regist_user_id')->nullable();
+            $table->timestamp('regist_date')->nullable();
             $table->integer('update_user_id')->nullable();
             $table->timestamp('update_date')->nullable();
         });
@@ -115,6 +135,17 @@ final class FieldApiTest extends TestCase
         Schema::connection('tenant')->create('record_10', static function (Blueprint $table): void {
             $table->bigIncrements('record_id');
         });
+
+        Schema::connection('tenant')->create('record_20', static function (Blueprint $table): void {
+            $table->bigIncrements('record_id');
+            $table->text('data_0_2001')->nullable();
+        });
+
+        DB::connection('tenant')->table('record_20')->insert([
+            ['record_id' => 1, 'data_0_2001' => 'Alpha Customer'],
+            ['record_id' => 2, 'data_0_2001' => 'Beta Vendor'],
+            ['record_id' => 3, 'data_0_2001' => 'Alpha Partner'],
+        ]);
     }
 
     private function actingAsSanctumUser(): void
@@ -130,6 +161,9 @@ final class FieldApiTest extends TestCase
     public function testFields_Unauthorized_Returns401(): void
     {
         $this->getJson('/api/v1/schemas/10/fields')->assertStatus(401);
+        $this->getJson('/api/v1/fields/1/selections')->assertStatus(401);
+        $this->getJson('/api/v1/fields/1/sequences')->assertStatus(401);
+        $this->getJson('/api/v1/fields/1/links/search')->assertStatus(401);
     }
 
     public function testFieldCrudAndSort_HappyPath(): void
@@ -184,6 +218,84 @@ final class FieldApiTest extends TestCase
         $this->getJson('/api/v1/schemas/10/fields/999')->assertStatus(404);
         $this->postJson('/api/v1/schemas/10/fields', [])->assertStatus(422);
         $this->putJson('/api/v1/schemas/10/fields/sort', ['field_ids' => []])->assertStatus(422);
+    }
+
+    public function testSelectionSequenceAndLinkEndpoints_HappyPath(): void
+    {
+        $this->actingAsSanctumUser();
+
+        $selectionFieldId = $this->createField('Status');
+        $sequenceFieldId = $this->createField('Invoice No');
+        $linkFieldId = $this->createField('Customer Link');
+
+        DB::connection('tenant')->table('field_configs')
+            ->where('field_id', '=', $linkFieldId)
+            ->update([
+                'link_schema_id' => 20,
+                'link_display_field_id' => 2001,
+            ]);
+
+        $this->putJson("/api/v1/fields/{$selectionFieldId}/selections", [
+            'options' => [
+                ['value' => 'open', 'label' => 'Open', 'order' => 0, 'is_active' => true],
+                ['value' => 'close', 'label' => 'Closed', 'order' => 1, 'is_active' => false],
+            ],
+        ])->assertStatus(200)->assertJsonPath('data.options.0.value', 'open');
+
+        $this->getJson("/api/v1/fields/{$selectionFieldId}/selections")
+            ->assertStatus(200)
+            ->assertJsonPath('data.options.1.label', 'Closed');
+
+        $this->putJson("/api/v1/fields/{$sequenceFieldId}/sequences", [
+            'prefix' => 'INV',
+            'padding' => 6,
+            'next_value' => 101,
+            'step' => 2,
+            'reset_policy' => 'monthly',
+        ])->assertStatus(200)->assertJsonPath('data.config.padding', 6);
+
+        $this->getJson("/api/v1/fields/{$sequenceFieldId}/sequences")
+            ->assertStatus(200)
+            ->assertJsonPath('data.config.resetPolicy', 'monthly');
+
+        $this->getJson("/api/v1/fields/{$linkFieldId}/links/search?q=Alpha&page=1&limit=10")
+            ->assertStatus(200)
+            ->assertJsonPath('data.total', 2)
+            ->assertJsonPath('data.items.0.display', 'Alpha Customer');
+    }
+
+    public function testSelectionSequenceAndLinkEndpoints_ValidationAndNotFound(): void
+    {
+        $this->actingAsSanctumUser();
+        $fieldId = $this->createField('Validation Field');
+
+        $this->putJson("/api/v1/fields/{$fieldId}/selections", [
+            'options' => [
+                ['value' => 'same', 'label' => 'A', 'order' => 0],
+                ['value' => 'same', 'label' => 'B', 'order' => 1],
+            ],
+        ])->assertStatus(422);
+
+        $this->putJson("/api/v1/fields/{$fieldId}/sequences", [
+            'padding' => 0,
+            'next_value' => 0,
+            'step' => 0,
+            'reset_policy' => 'invalid',
+        ])->assertStatus(422);
+
+        $this->getJson('/api/v1/fields/999999/selections')->assertStatus(404);
+        $this->getJson('/api/v1/fields/999999/sequences')->assertStatus(404);
+        $this->getJson('/api/v1/fields/999999/links/search')->assertStatus(404);
+    }
+
+    private function createField(string $name): int
+    {
+        $create = $this->postJson('/api/v1/schemas/10/fields', [
+            'field_name' => $name,
+            'data_type' => 0,
+        ])->assertStatus(201);
+
+        return (int) $create->json('data.field_id');
     }
 }
 

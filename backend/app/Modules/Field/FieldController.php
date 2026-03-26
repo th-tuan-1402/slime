@@ -6,7 +6,10 @@ namespace App\Modules\Field;
 
 use App\Http\AbstractApiController;
 use App\Modules\Field\Requests\SortFieldsRequest;
+use App\Modules\Field\Requests\SearchFieldLinksRequest;
 use App\Modules\Field\Requests\StoreFieldRequest;
+use App\Modules\Field\Requests\UpdateFieldSelectionsRequest;
+use App\Modules\Field\Requests\UpdateFieldSequenceRequest;
 use App\Modules\Field\Requests\UpdateFieldRequest;
 use Illuminate\Http\JsonResponse;
 
@@ -15,6 +18,8 @@ final class FieldController extends AbstractApiController
     public function __construct(
         private readonly FieldSearcher $fieldSearcher,
         private readonly FieldEditor $fieldEditor,
+        private readonly FieldSelectionSearcher $fieldSelectionSearcher,
+        private readonly FieldSelectionEditor $fieldSelectionEditor,
     ) {
     }
 
@@ -77,6 +82,40 @@ final class FieldController extends AbstractApiController
         $this->fieldEditor->sort($schemaId, $dto->fieldIds);
 
         return $this->respondSuccess(null, 'OK');
+    }
+
+    public function selections(int $fieldId): JsonResponse
+    {
+        return $this->respondSuccess($this->fieldSelectionSearcher->selections($fieldId));
+    }
+
+    public function updateSelections(int $fieldId, UpdateFieldSelectionsRequest $request): JsonResponse
+    {
+        /** @var \App\Modules\Field\Dtos\UpdateFieldSelectionsDto $dto */
+        $dto = $request->toDto();
+        $data = $this->fieldSelectionEditor->updateSelections($fieldId, $dto, $this->currentUserId());
+        return $this->respondSuccess($data);
+    }
+
+    public function sequence(int $fieldId): JsonResponse
+    {
+        return $this->respondSuccess($this->fieldSelectionSearcher->sequence($fieldId));
+    }
+
+    public function updateSequence(int $fieldId, UpdateFieldSequenceRequest $request): JsonResponse
+    {
+        /** @var \App\Modules\Field\Dtos\UpdateFieldSequenceDto $dto */
+        $dto = $request->toDto();
+        $data = $this->fieldSelectionEditor->updateSequence($fieldId, $dto, $this->currentUserId());
+        return $this->respondSuccess($data);
+    }
+
+    public function searchLinks(int $fieldId, SearchFieldLinksRequest $request): JsonResponse
+    {
+        /** @var \App\Modules\Field\Dtos\SearchFieldLinksDto $dto */
+        $dto = $request->toDto();
+        $data = $this->fieldSelectionSearcher->searchLinks($fieldId, $dto);
+        return $this->respondSuccess($data);
     }
 }
 
