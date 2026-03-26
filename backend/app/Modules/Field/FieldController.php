@@ -6,7 +6,10 @@ namespace App\Modules\Field;
 
 use App\Http\AbstractApiController;
 use App\Modules\Field\Requests\SortFieldsRequest;
+use App\Modules\Field\Requests\SearchFieldLinksRequest;
 use App\Modules\Field\Requests\StoreFieldRequest;
+use App\Modules\Field\Requests\UpdateFieldSelectionsRequest;
+use App\Modules\Field\Requests\UpdateFieldSequenceRequest;
 use App\Modules\Field\Requests\UpdateFieldRequest;
 use Illuminate\Http\JsonResponse;
 
@@ -15,6 +18,8 @@ final class FieldController extends AbstractApiController
     public function __construct(
         private readonly FieldSearcher $fieldSearcher,
         private readonly FieldEditor $fieldEditor,
+        private readonly FieldSelectionSearcher $fieldSelectionSearcher,
+        private readonly FieldSelectionEditor $fieldSelectionEditor,
     ) {
     }
 
@@ -77,6 +82,56 @@ final class FieldController extends AbstractApiController
         $this->fieldEditor->sort($schemaId, $dto->fieldIds);
 
         return $this->respondSuccess(null, 'OK');
+    }
+
+    /**
+     * List selection options configured for the field.
+     * Used for dropdown/radio option retrieval.
+     */
+    public function selections(int $fieldId): JsonResponse
+    {
+        return $this->respondSuccess($this->fieldSelectionSearcher->selections($fieldId));
+    }
+
+    /**
+     * Replace all selection options for a field in one transaction.
+     */
+    public function updateSelections(int $fieldId, UpdateFieldSelectionsRequest $request): JsonResponse
+    {
+        /** @var \App\Modules\Field\Dtos\UpdateFieldSelectionsDto $dto */
+        $dto = $request->toDto();
+        $data = $this->fieldSelectionEditor->updateSelections($fieldId, $dto, $this->currentUserId());
+        return $this->respondSuccess($data);
+    }
+
+    /**
+     * Get sequence configuration for the field.
+     */
+    public function sequence(int $fieldId): JsonResponse
+    {
+        return $this->respondSuccess($this->fieldSelectionSearcher->sequence($fieldId));
+    }
+
+    /**
+     * Update sequence configuration for a field.
+     */
+    public function updateSequence(int $fieldId, UpdateFieldSequenceRequest $request): JsonResponse
+    {
+        /** @var \App\Modules\Field\Dtos\UpdateFieldSequenceDto $dto */
+        $dto = $request->toDto();
+        $data = $this->fieldSelectionEditor->updateSequence($fieldId, $dto, $this->currentUserId());
+        return $this->respondSuccess($data);
+    }
+
+    /**
+     * Search linked records by keyword for a link field.
+     */
+    public function searchLinks(int $fieldId, SearchFieldLinksRequest $request): JsonResponse
+    {
+        /** @var \App\Modules\Field\Dtos\SearchFieldLinksDto $dto */
+        $dto = $request->toDto();
+        $data = $this->fieldSelectionSearcher->searchLinks($fieldId, $dto);
+        return $this->respondSuccess($data);
     }
 }
 
