@@ -84,11 +84,18 @@ final class FieldController extends AbstractApiController
         return $this->respondSuccess(null, 'OK');
     }
 
+    /**
+     * List selection options configured for the field.
+     * Used for dropdown/radio option retrieval.
+     */
     public function selections(int $fieldId): JsonResponse
     {
         return $this->respondSuccess($this->fieldSelectionSearcher->selections($fieldId));
     }
 
+    /**
+     * Replace all selection options for a field in one transaction.
+     */
     public function updateSelections(int $fieldId, UpdateFieldSelectionsRequest $request): JsonResponse
     {
         /** @var \App\Modules\Field\Dtos\UpdateFieldSelectionsDto $dto */
@@ -97,11 +104,17 @@ final class FieldController extends AbstractApiController
         return $this->respondSuccess($data);
     }
 
+    /**
+     * Get sequence configuration for the field.
+     */
     public function sequence(int $fieldId): JsonResponse
     {
         return $this->respondSuccess($this->fieldSelectionSearcher->sequence($fieldId));
     }
 
+    /**
+     * Update sequence configuration for a field.
+     */
     public function updateSequence(int $fieldId, UpdateFieldSequenceRequest $request): JsonResponse
     {
         /** @var \App\Modules\Field\Dtos\UpdateFieldSequenceDto $dto */
@@ -110,6 +123,9 @@ final class FieldController extends AbstractApiController
         return $this->respondSuccess($data);
     }
 
+    /**
+     * Search linked records by keyword for a link field.
+     */
     public function searchLinks(int $fieldId, SearchFieldLinksRequest $request): JsonResponse
     {
         /** @var \App\Modules\Field\Dtos\SearchFieldLinksDto $dto */
