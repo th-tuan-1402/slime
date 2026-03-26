@@ -1,7 +1,10 @@
 <template>
-  <div class="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-8">
-    <h1 class="text-3xl font-bold text-gray-800 mb-4">Hanbai Migration</h1>
-    <p class="text-gray-600 mb-6">Nuxt 3 + Tailwind + Nuxt UI</p>
-    <UButton color="primary" size="lg">Nuxt UI Button</UButton>
-  </div>
+  <AppLayout>
+    <div class="rounded border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-950">
+      <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Home</h1>
+      <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+        App layout shell with SideNav, TopBar, MenuTabs and tenant-aware menu state.
+      </p>
+    </div>
+  </AppLayout>
 </template>
