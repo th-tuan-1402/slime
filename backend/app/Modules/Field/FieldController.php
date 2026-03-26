@@ -9,6 +9,7 @@ use App\Http\AbstractApiController;
 use App\Modules\Field\Requests\SortFieldsRequest;
 use App\Modules\Field\Requests\SearchFieldLinksRequest;
 use App\Modules\Field\Requests\StoreFieldRequest;
+use App\Modules\Field\Requests\UpdateFieldConfigsRequest;
 use App\Modules\Field\Requests\UpdateFieldSelectionsRequest;
 use App\Modules\Field\Requests\UpdateFieldSequenceRequest;
 use App\Modules\Field\Requests\UpdateFieldRequest;
@@ -19,6 +20,8 @@ final class FieldController extends AbstractApiController
     public function __construct(
         private readonly FieldSearcher $fieldSearcher,
         private readonly FieldEditor $fieldEditor,
+        private readonly FieldConfigSearcher $fieldConfigSearcher,
+        private readonly FieldConfigEditor $fieldConfigEditor,
         private readonly FieldSelectionSearcher $fieldSelectionSearcher,
         private readonly FieldSelectionEditor $fieldSelectionEditor,
     ) {
@@ -53,6 +56,15 @@ final class FieldController extends AbstractApiController
     }
 
     /**
+     * Get all editable field configs in schema scope.
+     */
+    public function configs(int $schemaId, int $fieldId): JsonResponse
+    {
+        $this->authorizeFieldRead();
+        return $this->respondSuccess($this->fieldConfigSearcher->find($schemaId, $fieldId));
+    }
+
+    /**
      * Update field.
      */
     public function update(int $schemaId, int $fieldId, UpdateFieldRequest $request): JsonResponse
@@ -62,6 +74,19 @@ final class FieldController extends AbstractApiController
         $field = $this->fieldEditor->update($schemaId, $fieldId, $dto, $this->currentUserId());
 
         return $this->respondSuccess($field);
+    }
+
+    /**
+     * Update editable field configs in schema scope.
+     */
+    public function updateConfigs(int $schemaId, int $fieldId, UpdateFieldConfigsRequest $request): JsonResponse
+    {
+        $this->authorizeFieldWrite();
+        /** @var \App\Modules\Field\Dtos\UpdateFieldConfigsDto $dto */
+        $dto = $request->toDto();
+        return $this->respondSuccess(
+            $this->fieldConfigEditor->update($schemaId, $fieldId, $dto, $this->currentUserId()),
+        );
     }
 
     /**

@@ -165,6 +165,8 @@ final class FieldApiTest extends TestCase
     public function testFields_Unauthorized_Returns401(): void
     {
         $this->getJson('/api/v1/schemas/10/fields')->assertStatus(401);
+        $this->getJson('/api/v1/schemas/10/fields/1/configs')->assertStatus(401);
+        $this->putJson('/api/v1/schemas/10/fields/1/configs', ['configs' => ['max_length' => 255]])->assertStatus(401);
         $this->getJson('/api/v1/fields/1/selections')->assertStatus(401);
         $this->getJson('/api/v1/fields/1/sequences')->assertStatus(401);
         $this->getJson('/api/v1/fields/1/links/search')->assertStatus(401);
@@ -351,6 +353,54 @@ final class FieldApiTest extends TestCase
             ->assertStatus(200)
             ->assertJsonPath('data.total', 2)
             ->assertJsonMissing(['id' => 2]);
+    }
+
+    public function testFieldConfigsEndpoints_HappyPath(): void
+    {
+        $this->actingAsSanctumUser();
+        $fieldId = $this->createField('Configurable', 0);
+
+        $this->getJson("/api/v1/schemas/10/fields/{$fieldId}/configs")
+            ->assertStatus(200)
+            ->assertJsonPath('data.schemaId', 10)
+            ->assertJsonPath('data.fieldId', $fieldId)
+            ->assertJsonPath('data.configs.max_length', null);
+
+        $this->putJson("/api/v1/schemas/10/fields/{$fieldId}/configs", [
+            'configs' => [
+                'max_length' => 512,
+                'is_required' => 1,
+                'sequence_prefix' => 'INV',
+            ],
+        ])->assertStatus(200)
+            ->assertJsonPath('data.configs.max_length', 512)
+            ->assertJsonPath('data.configs.sequence_prefix', 'INV');
+    }
+
+    public function testFieldConfigsEndpoints_ValidationAndAuthz(): void
+    {
+        $this->actingAsSanctumUser();
+        $fieldId = $this->createField('Configurable', 0);
+
+        $this->putJson("/api/v1/schemas/10/fields/{$fieldId}/configs", [
+            'configs' => [
+                'unknown_key' => 'abc',
+            ],
+        ])->assertStatus(422);
+
+        $this->putJson("/api/v1/schemas/10/fields/{$fieldId}/configs", [
+            'configs' => [
+                'max_length' => 'not-int',
+            ],
+        ])->assertStatus(422);
+
+        $this->getJson('/api/v1/schemas/999/fields/100/configs')->assertStatus(404);
+
+        $this->actingAsSanctumUser('readonly');
+        $this->getJson("/api/v1/schemas/10/fields/{$fieldId}/configs")->assertStatus(200);
+        $this->putJson("/api/v1/schemas/10/fields/{$fieldId}/configs", [
+            'configs' => ['max_length' => 12],
+        ])->assertStatus(403);
     }
 
     private function createField(string $name, int $dataType = 0): int
