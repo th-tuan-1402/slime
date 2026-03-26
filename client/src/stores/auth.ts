@@ -12,7 +12,6 @@ export interface StoredAuthState {
   accessToken: string | null
   refreshToken: string | null
   user: UserResource | null
-  isAuthenticated: boolean
 }
 
 function readStorage(): string | null {
@@ -30,7 +29,6 @@ function writeStorage(state: StoredAuthState): void {
     accessToken: state.accessToken,
     refreshToken: state.refreshToken,
     user: state.user,
-    isAuthenticated: state.isAuthenticated,
   }
   localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload))
 }
@@ -47,12 +45,14 @@ export const useAuthStore = defineStore('auth', {
     accessToken: null as string | null,
     refreshToken: null as string | null,
     user: null as UserResource | null,
-    isAuthenticated: false,
+    isLoading: false,
     isHydrated: false,
   }),
 
   getters: {
-    hasValidSession: (state) => state.isAuthenticated && Boolean(state.accessToken),
+    isAuthenticated: (state) => Boolean(state.accessToken) && Boolean(state.user),
+    hasValidSession: (state) =>
+      Boolean(state.accessToken) && Boolean(state.user),
     authHeader: (state) =>
       state.accessToken ? `Bearer ${state.accessToken}` : null,
   },
@@ -62,13 +62,11 @@ export const useAuthStore = defineStore('auth', {
       this.accessToken = payload.accessToken
       this.refreshToken = payload.refreshToken ?? null
       this.user = payload.user ?? null
-      this.isAuthenticated = true
       this.isHydrated = true
       writeStorage({
         accessToken: this.accessToken,
         refreshToken: this.refreshToken,
         user: this.user,
-        isAuthenticated: this.isAuthenticated,
       })
     },
 
@@ -76,9 +74,13 @@ export const useAuthStore = defineStore('auth', {
       this.accessToken = null
       this.refreshToken = null
       this.user = null
-      this.isAuthenticated = false
+      this.isLoading = false
       this.isHydrated = true
       clearStorage()
+    },
+
+    setLoading(isLoading: boolean): void {
+      this.isLoading = isLoading
     },
 
     hydrateFromStorage(): void {
@@ -96,13 +98,11 @@ export const useAuthStore = defineStore('auth', {
         this.refreshToken =
           typeof parsed.refreshToken === 'string' ? parsed.refreshToken : null
         this.user = parsed.user ?? null
-        this.isAuthenticated = Boolean(parsed.isAuthenticated) && Boolean(this.accessToken)
       } catch {
         clearStorage()
         this.accessToken = null
         this.refreshToken = null
         this.user = null
-        this.isAuthenticated = false
       } finally {
         this.isHydrated = true
       }
