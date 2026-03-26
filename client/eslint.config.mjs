@@ -28,6 +28,15 @@ export default tseslint.config(
       globals: globals.node,
     },
   },
+  {
+    files: ['**/*.test.{ts,tsx}', '**/tests/**/*.{ts,tsx}'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.browser,
+      },
+    },
+  },
   ...pluginVue.configs['flat/recommended'],
   {
     files: ['**/*.vue'],
