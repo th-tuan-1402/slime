@@ -126,6 +126,71 @@ final class FieldRepository
             ->delete();
     }
 
+    /**
+     * @return list<string>
+     */
+    public function editableConfigKeys(): array
+    {
+        /** @var list<string> $columns */
+        $columns = Schema::connection('tenant')->getColumnListing('field_configs');
+        $excluded = [
+            'config_id',
+            'field_id',
+            'regist_user_id',
+            'regist_date',
+            'update_user_id',
+            'update_date',
+        ];
+
+        return array_values(array_diff($columns, $excluded));
+    }
+
+    /**
+     * @param array<string, bool|int|string|null> $configs
+     * @return array<string, list<string>>
+     */
+    public function validateConfigTypes(array $configs): array
+    {
+        $errors = [];
+        foreach ($configs as $key => $value) {
+            $type = Schema::connection('tenant')->getColumnType('field_configs', $key);
+            if (in_array($type, ['integer', 'bigint', 'smallint', 'tinyint'], true)) {
+                if (!is_int($value) && !is_bool($value) && $value !== null) {
+                    $errors["configs.{$key}"] = ['This config expects integer/boolean value.'];
+                }
+                continue;
+            }
+
+            if (in_array($type, ['string', 'text'], true)) {
+                if (!is_string($value) && $value !== null) {
+                    $errors["configs.{$key}"] = ['This config expects string value.'];
+                }
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * @param array<string, mixed>|null $config
+     * @return array<string, mixed>
+     */
+    public function extractEditableConfigMap(?array $config): array
+    {
+        if ($config === null) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($this->editableConfigKeys() as $key) {
+            if (array_key_exists($key, $config)) {
+                $result[$key] = $config[$key];
+            }
+        }
+
+        return $result;
+    }
+
     public function getMaxOrder(int $schemaId): int
     {
         /** @var int|null $max */
