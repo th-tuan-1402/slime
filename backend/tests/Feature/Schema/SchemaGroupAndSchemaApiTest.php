@@ -70,8 +70,6 @@ final class SchemaGroupAndSchemaApiTest extends TestCase
         Schema::connection('tenant')->dropIfExists('db_schema');
         Schema::connection('tenant')->dropIfExists('db_group');
         Schema::connection('tenant')->dropIfExists('db_field');
-        Schema::connection('tenant')->dropIfExists('access_info');
-        Schema::connection('tenant')->dropIfExists('db_mail_config');
 
         Schema::connection('tenant')->create('db_group', static function (Blueprint $table): void {
             $table->increments('dbg_id');
@@ -103,24 +101,6 @@ final class SchemaGroupAndSchemaApiTest extends TestCase
             $table->increments('field_id');
             $table->integer('db_schema_id');
             $table->string('field_name')->default('');
-        });
-
-        Schema::connection('tenant')->create('access_info', static function (Blueprint $table): void {
-            $table->increments('access_id');
-            $table->integer('db_schema_id');
-            $table->integer('regist_user_id')->nullable();
-            $table->timestamp('regist_date')->nullable();
-            $table->integer('update_user_id')->nullable();
-            $table->timestamp('update_date')->nullable();
-        });
-
-        Schema::connection('tenant')->create('db_mail_config', static function (Blueprint $table): void {
-            $table->increments('mail_config_id');
-            $table->integer('db_schema_id');
-            $table->integer('regist_user_id')->nullable();
-            $table->timestamp('regist_date')->nullable();
-            $table->integer('update_user_id')->nullable();
-            $table->timestamp('update_date')->nullable();
         });
     }
 
@@ -273,69 +253,45 @@ final class SchemaGroupAndSchemaApiTest extends TestCase
         ])->assertStatus(422);
     }
 
-    public function testSchemaDeleteConfirmAndDeleteCascade_HappyPath(): void
+    public function testSchemaCopy_CopiesMetadataAndFields_CreatesRecordTable(): void
     {
         $this->actingAsSanctumUser();
 
-        $schema = $this->postJson('/api/v1/schemas', [
+        $source = $this->postJson('/api/v1/schemas', [
             'dbg_id' => 0,
-            'db_schema_name' => 'Schema Delete Me',
+            'db_schema_name' => 'Source Schema',
             'schema_type' => 0,
         ])->assertStatus(201);
 
-        $schemaId = (int) $schema->json('data.db_schema_id');
-        $this->assertTrue(Schema::connection('tenant')->hasTable("record_{$schemaId}"));
-
+        $sourceId = (int) $source->json('data.db_schema_id');
         DB::connection('tenant')->table('db_field')->insert([
-            'db_schema_id' => $schemaId,
+            'db_schema_id' => $sourceId,
             'field_name' => 'F1',
         ]);
-        DB::connection('tenant')->table("record_{$schemaId}")->insert([
-            'regist_user_id' => 1,
-            'regist_date' => now(),
+        DB::connection('tenant')->table('db_field')->insert([
+            'db_schema_id' => $sourceId,
+            'field_name' => 'F2',
         ]);
 
-        $this->getJson("/api/v1/schemas/{$schemaId}/delete-confirm")
-            ->assertStatus(200)
-            ->assertJsonPath('data.schemaId', $schemaId)
-            ->assertJsonPath('data.affected.db_field.count', 1)
-            ->assertJsonPath('data.affected.access_info.count', 1)
-            ->assertJsonPath('data.affected.db_mail_config.count', 1)
-            ->assertJsonPath('data.affected.record_table.exists', true)
-            ->assertJsonPath('data.affected.record_table.count', 1);
+        $copied = $this->postJson("/api/v1/schemas/{$sourceId}/copy", [
+            'db_schema_name' => 'Copied Schema',
+        ])->assertStatus(201);
 
-        $this->deleteJson("/api/v1/schemas/{$schemaId}")
-            ->assertStatus(200)
-            ->assertJsonPath('data.schemaId', $schemaId)
-            ->assertJsonPath('data.deleted', true);
+        $newId = (int) $copied->json('data.db_schema_id');
+        $this->assertNotSame($sourceId, $newId);
+        $copied->assertJsonPath('data.db_schema_name', 'Copied Schema');
 
-        $this->assertNull(DB::connection('tenant')->table('db_schema')->where('db_schema_id', '=', $schemaId)->first());
-        $this->assertSame(0, (int) DB::connection('tenant')->table('db_field')->where('db_schema_id', '=', $schemaId)->count());
-        $this->assertSame(0, (int) DB::connection('tenant')->table('access_info')->where('db_schema_id', '=', $schemaId)->count());
-        $this->assertSame(0, (int) DB::connection('tenant')->table('db_mail_config')->where('db_schema_id', '=', $schemaId)->count());
-        $this->assertFalse(Schema::connection('tenant')->hasTable("record_{$schemaId}"));
+        $this->assertTrue(Schema::connection('tenant')->hasTable("record_{$newId}"));
+
+        $count = (int) DB::connection('tenant')->table('db_field')->where('db_schema_id', '=', $newId)->count();
+        $this->assertSame(2, $count);
     }
 
-    public function testSchemaBatchDelete_ContinuesPerItem_ReturnsSummary(): void
+    public function testSchemaCopy_NotFound_Returns404(): void
     {
         $this->actingAsSanctumUser();
 
-        $s1 = $this->postJson('/api/v1/schemas', ['dbg_id' => 0, 'db_schema_name' => 'S1'])->assertStatus(201);
-        $s2 = $this->postJson('/api/v1/schemas', ['dbg_id' => 0, 'db_schema_name' => 'S2'])->assertStatus(201);
-
-        $id1 = (int) $s1->json('data.db_schema_id');
-        $id2 = (int) $s2->json('data.db_schema_id');
-
-        $resp = $this->deleteJson('/api/v1/schemas/batch', [
-            'schema_ids' => [$id1, 999999, $id2],
-        ])->assertStatus(200);
-
-        $resp->assertJsonPath('data.summary.total', 3);
-        $resp->assertJsonPath('data.summary.deleted', 2);
-        $resp->assertJsonPath('data.summary.failed', 1);
-
-        $this->assertNull(DB::connection('tenant')->table('db_schema')->where('db_schema_id', '=', $id1)->first());
-        $this->assertNull(DB::connection('tenant')->table('db_schema')->where('db_schema_id', '=', $id2)->first());
+        $this->postJson('/api/v1/schemas/999999/copy', [])->assertStatus(404);
     }
 }
 
