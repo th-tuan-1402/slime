@@ -21,7 +21,7 @@ final class UpdateFieldConfigsRequest extends BaseFormRequest
         ];
     }
 
-    public function toDto(): object
+    public function toDto(): UpdateFieldConfigsDto
     {
         /** @var array{configs:array<string,mixed>} $data */
         $data = $this->validated();
