@@ -10,15 +10,9 @@ Route::middleware(['auth:sanctum'])->group(static function (): void {
     // Schema
     Route::get('/schemas', [SchemaController::class, 'index']);
     Route::post('/schemas', [SchemaController::class, 'store']);
-<<<<<<< HEAD
-=======
     Route::post('/schemas/{id}/copy', [SchemaController::class, 'copy'])->whereNumber('id');
->>>>>>> a52ccdb (feat(schema): スキーマコピーAPIを追加)
-    Route::get('/schemas/{id}/delete-confirm', [SchemaController::class, 'deleteConfirm'])->whereNumber('id');
-    Route::delete('/schemas/batch', [SchemaController::class, 'batchDestroy']);
     Route::get('/schemas/{id}', [SchemaController::class, 'show'])->whereNumber('id');
     Route::put('/schemas/{id}', [SchemaController::class, 'update'])->whereNumber('id');
-    Route::delete('/schemas/{id}', [SchemaController::class, 'destroy'])->whereNumber('id');
     Route::put('/schemas/sort', [SchemaController::class, 'sort']);
 
     // Schema group
