@@ -215,7 +215,7 @@ final class SchemaEditor
 
     /**
      * @param list<int> $schemaIds
-     * @return array{summary:array{total:int,deleted:int,failed:int},results:list<array{schemaId:int,deleted:bool,error:?string}>}
+     * @return array{summary:array{total:int,deleted:int,failed:int},results:list<array{schemaId:int,deleted:bool,error:?string,errorCode:?string}>}
      */
     public function batchDeleteCascade(array $schemaIds, int $actorUserId): array
     {
@@ -234,12 +234,28 @@ final class SchemaEditor
                     'schemaId' => $schemaId,
                     'deleted' => true,
                     'error' => null,
+                    'errorCode' => null,
                 ];
-            } catch (\Throwable $e) {
+            } catch (NotFoundHttpException) {
                 $results[] = [
                     'schemaId' => $schemaId,
                     'deleted' => false,
-                    'error' => $e->getMessage(),
+                    'error' => 'Failed.',
+                    'errorCode' => 'NOT_FOUND',
+                ];
+            } catch (ValidationException) {
+                $results[] = [
+                    'schemaId' => $schemaId,
+                    'deleted' => false,
+                    'error' => 'Failed.',
+                    'errorCode' => 'VALIDATION_FAILED',
+                ];
+            } catch (\Throwable) {
+                $results[] = [
+                    'schemaId' => $schemaId,
+                    'deleted' => false,
+                    'error' => 'Failed.',
+                    'errorCode' => 'FAILED',
                 ];
             }
         }
