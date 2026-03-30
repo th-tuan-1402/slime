@@ -86,5 +86,12 @@ final class SchemaRepository
             ->where('dbg_id', '=', $dbgId)
             ->update(['dbg_id' => $defaultDbgId]);
     }
+
+    public function delete(int $schemaId): int
+    {
+        return (int) $this->db->table('db_schema')
+            ->where('db_schema_id', '=', $schemaId)
+            ->delete();
+    }
 }
 

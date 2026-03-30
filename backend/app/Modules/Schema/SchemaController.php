@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Schema;
 
 use App\Http\AbstractApiController;
+use App\Modules\Schema\Requests\DeleteSchemasRequest;
 use App\Modules\Schema\Requests\SortSchemasRequest;
 use App\Modules\Schema\Requests\StoreSchemaRequest;
 use App\Modules\Schema\Requests\UpdateSchemaRequest;
@@ -85,6 +86,33 @@ final class SchemaController extends AbstractApiController
         $this->schemaEditor->sort($schemaIds);
 
         return $this->respondSuccess(null, 'OK');
+    }
+
+    /**
+     * Pre-delete check for a schema (B1 scope).
+     */
+    public function deleteConfirm(int $id): JsonResponse
+    {
+        return $this->respondSuccess($this->schemaEditor->deleteConfirm($id));
+    }
+
+    /**
+     * Delete a schema and its B1-scope dependent resources.
+     */
+    public function destroy(int $id): JsonResponse
+    {
+        $result = $this->schemaEditor->deleteCascade($id, $this->currentUserId());
+        return $this->respondSuccess($result, 'OK');
+    }
+
+    /**
+     * Batch delete schemas. Continue per item and return aggregated summary.
+     */
+    public function batchDestroy(DeleteSchemasRequest $request): JsonResponse
+    {
+        $dto = $request->toDto();
+        $result = $this->schemaEditor->batchDeleteCascade($dto->schemaIds, $this->currentUserId());
+        return $this->respondSuccess($result, 'OK');
     }
 }
 
