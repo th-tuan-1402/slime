@@ -337,5 +337,49 @@ final class SchemaGroupAndSchemaApiTest extends TestCase
         $this->assertNull(DB::connection('tenant')->table('db_schema')->where('db_schema_id', '=', $id1)->first());
         $this->assertNull(DB::connection('tenant')->table('db_schema')->where('db_schema_id', '=', $id2)->first());
     }
+<<<<<<< HEAD
+=======
+
+    public function testSchemaCopy_CopiesMetadataAndFields_CreatesRecordTable(): void
+    {
+        $this->actingAsSanctumUser();
+
+        $source = $this->postJson('/api/v1/schemas', [
+            'dbg_id' => 0,
+            'db_schema_name' => 'Source Schema',
+            'schema_type' => 0,
+        ])->assertStatus(201);
+
+        $sourceId = (int) $source->json('data.db_schema_id');
+        DB::connection('tenant')->table('db_field')->insert([
+            'db_schema_id' => $sourceId,
+            'field_name' => 'F1',
+        ]);
+        DB::connection('tenant')->table('db_field')->insert([
+            'db_schema_id' => $sourceId,
+            'field_name' => 'F2',
+        ]);
+
+        $copied = $this->postJson("/api/v1/schemas/{$sourceId}/copy", [
+            'db_schema_name' => 'Copied Schema',
+        ])->assertStatus(201);
+
+        $newId = (int) $copied->json('data.db_schema_id');
+        $this->assertNotSame($sourceId, $newId);
+        $copied->assertJsonPath('data.db_schema_name', 'Copied Schema');
+
+        $this->assertTrue(Schema::connection('tenant')->hasTable("record_{$newId}"));
+
+        $count = (int) DB::connection('tenant')->table('db_field')->where('db_schema_id', '=', $newId)->count();
+        $this->assertSame(2, $count);
+    }
+
+    public function testSchemaCopy_NotFound_Returns404(): void
+    {
+        $this->actingAsSanctumUser();
+
+        $this->postJson('/api/v1/schemas/999999/copy', [])->assertStatus(404);
+    }
+>>>>>>> a52ccdb (feat(schema): スキーマコピーAPIを追加)
 }
 

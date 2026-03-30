@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Schema;
 
 use App\Http\AbstractApiController;
+<<<<<<< HEAD
+=======
+use App\Modules\Schema\Requests\CopySchemaRequest;
+>>>>>>> a52ccdb (feat(schema): スキーマコピーAPIを追加)
 use App\Modules\Schema\Requests\DeleteSchemasRequest;
 use App\Modules\Schema\Requests\SortSchemasRequest;
 use App\Modules\Schema\Requests\StoreSchemaRequest;
@@ -45,6 +49,19 @@ final class SchemaController extends AbstractApiController
         $dto = $request->toDto();
 
         $schema = $this->schemaEditor->create($dto, $this->currentUserId());
+
+        return $this->respondCreated($schema);
+    }
+
+    /**
+     * Copy a schema (B1 scope): schema metadata + db_field definitions + record table.
+     */
+    public function copy(int $id, CopySchemaRequest $request): JsonResponse
+    {
+        /** @var \App\Modules\Schema\Dtos\CopySchemaDto $dto */
+        $dto = $request->toDto();
+
+        $schema = $this->schemaEditor->copy($id, $dto, $this->currentUserId());
 
         return $this->respondCreated($schema);
     }

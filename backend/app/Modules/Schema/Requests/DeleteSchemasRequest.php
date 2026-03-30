@@ -28,4 +28,3 @@ final class DeleteSchemasRequest extends BaseFormRequest
         return new DeleteSchemasDto(array_map('intval', $data['schema_ids']));
     }
 }
-
