@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http;
 
 use App\Enums\RoleKey;
-use App\Models\User;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Http\JsonResponse;
@@ -131,8 +131,7 @@ abstract class AbstractApiController extends Controller
     /**
      * Get the tenant ID for the current request.
      *
-     * Reads the `tenant_id` attribute from the authenticated user.
-     * Auth middleware is expected to have already authenticated the request.
+     * Uses `X-Tenant-ID` header (preferred) and falls back to legacy user attribute in tests.
      *
      * @return string The tenant database identifier.
      * @throws \RuntimeException If the tenant ID is not available on the user.
@@ -142,7 +141,8 @@ abstract class AbstractApiController extends Controller
     {
         $user = $this->currentUser();
 
-        $tenantId = $user->tenant_id;
+        $tenantId = request()->header('X-Tenant-ID')
+            ?? ($user instanceof \App\Models\User ? $user->tenant_id : null);
 
         if ($tenantId === null || $tenantId === '') {
             throw new \RuntimeException('Tenant ID is not available on the authenticated user.');
@@ -154,10 +154,10 @@ abstract class AbstractApiController extends Controller
     /**
      * Get the currently authenticated user.
      *
-     * @return User The authenticated user model.
+     * @return Authenticatable The authenticated user model (tenant {@see \App\Modules\Auth\AuthUser} or legacy {@see \App\Models\User} in tests).
      * @throws AuthenticationException If no user is authenticated.
      */
-    protected function currentUser(): User
+    protected function currentUser(): Authenticatable
     {
         $user = request()->user();
 
@@ -165,7 +165,6 @@ abstract class AbstractApiController extends Controller
             throw new AuthenticationException('Unauthenticated.');
         }
 
-        /** @var User $user */
         return $user;
     }
 
@@ -201,7 +200,7 @@ abstract class AbstractApiController extends Controller
             $roles,
         );
 
-        $userRole = $user->role ?? '';
+        $userRole = (string) ($user->role ?? '');
 
         if (!in_array($userRole, $allowed, true)) {
             throw new AccessDeniedHttpException('Insufficient permissions.');

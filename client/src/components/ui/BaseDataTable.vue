@@ -15,12 +15,16 @@ const props = withDefaults(
     currentPage?: number
     perPage?: number
     total?: number
+    sortKey?: string | null
+    sortDir?: 'asc' | 'desc' | null
   }>(),
   {
     loading: false,
     currentPage: 1,
     perPage: 10,
     total: 0,
+    sortKey: null,
+    sortDir: null,
   },
 )
 
@@ -29,7 +33,13 @@ const emit = defineEmits<{
   pageChange: [page: number]
 }>()
 
-const sortState = ref<{ key: string; direction: 'asc' | 'desc' } | null>(null)
+const uncontrolledSortState = ref<{ key: string; direction: 'asc' | 'desc' } | null>(null)
+const sortState = computed(() => {
+  if (props.sortKey && props.sortDir) {
+    return { key: props.sortKey, direction: props.sortDir }
+  }
+  return uncontrolledSortState.value
+})
 const totalPages = computed(() =>
   Math.max(1, Math.ceil((props.total || props.rows.length) / props.perPage)),
 )
@@ -39,7 +49,9 @@ const toggleSort = (key: string, sortable?: boolean) => {
   const current = sortState.value
   const nextDirection =
     current && current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
-  sortState.value = { key, direction: nextDirection }
+  if (!props.sortKey || !props.sortDir) {
+    uncontrolledSortState.value = { key, direction: nextDirection }
+  }
   emit('sort', key, nextDirection)
 }
 

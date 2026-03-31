@@ -161,15 +161,45 @@ final class SchemaEditor
         $table = "record_{$schemaId}";
 
         if (SchemaFacade::connection('tenant')->hasTable($table)) {
+            $this->ensureRecordTableColumns($table);
             return;
         }
 
         SchemaFacade::connection('tenant')->create($table, static function (Blueprint $blueprint): void {
             $blueprint->bigIncrements('record_id');
+            $blueprint->integer('parent_record_id')->nullable();
+            $blueprint->integer('record_outer_id')->nullable();
             $blueprint->integer('regist_user_id')->nullable();
             $blueprint->timestamp('regist_date')->nullable();
             $blueprint->integer('update_user_id')->nullable();
             $blueprint->timestamp('update_date')->nullable();
+        });
+
+        $this->ensureRecordTableColumns($table);
+    }
+
+    private function ensureRecordTableColumns(string $table): void
+    {
+        $conn = SchemaFacade::connection('tenant');
+
+        $missing = [];
+        foreach (['parent_record_id', 'record_outer_id'] as $col) {
+            if ($conn->hasColumn($table, $col) !== true) {
+                $missing[] = $col;
+            }
+        }
+
+        if ($missing === []) {
+            return;
+        }
+
+        SchemaFacade::connection('tenant')->table($table, static function (Blueprint $blueprint) use ($missing): void {
+            if (in_array('parent_record_id', $missing, true)) {
+                $blueprint->integer('parent_record_id')->nullable();
+            }
+            if (in_array('record_outer_id', $missing, true)) {
+                $blueprint->integer('record_outer_id')->nullable();
+            }
         });
     }
 

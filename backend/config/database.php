@@ -30,7 +30,7 @@ return [
             'url' => env('TENANT_DB_URL'),
             'host' => env('TENANT_DB_HOST', env('DB_HOST', '127.0.0.1')),
             'port' => env('TENANT_DB_PORT', env('DB_PORT', '5432')),
-            'database' => env('TENANT_DB_DATABASE', ''),
+            'database' => env('TENANT_DB_DATABASE', env('DB_DATABASE', 'slime')),
             'username' => env('TENANT_DB_USERNAME', env('DB_USERNAME', 'slime')),
             'password' => env('TENANT_DB_PASSWORD', env('DB_PASSWORD', '')),
             'charset' => 'utf8',

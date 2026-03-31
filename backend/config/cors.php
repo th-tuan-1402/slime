@@ -13,9 +13,27 @@ return [
 
     'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    'allowed_origins' => array_filter(
-        array_map('trim', explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:3000')))
-    ),
+    'allowed_origins' => (static function (): array {
+        $clientPort = (string) env('CLIENT_PORT', '3000');
+        $defaultFrontendUrl = 'http://localhost:' . $clientPort;
+
+        $corsAllowedOrigins = env('CORS_ALLOWED_ORIGINS');
+        $frontendUrl = env('FRONTEND_URL');
+        $clientUrl = env('CLIENT_URL');
+
+        $raw = (string) ($corsAllowedOrigins ?? $frontendUrl ?? $clientUrl ?? $defaultFrontendUrl);
+
+        $appEnv = (string) env('APP_ENV', 'production');
+        $isProduction = $appEnv === 'production';
+        $usedFallbackDefault = $corsAllowedOrigins === null && $frontendUrl === null && $clientUrl === null;
+
+        return \App\Support\CorsAllowedOrigins::build(
+            raw: $raw,
+            isProduction: $isProduction,
+            supportsCredentials: true,
+            usedFallbackDefault: $usedFallbackDefault
+        );
+    })(),
 
     'allowed_origins_patterns' => [],
 
