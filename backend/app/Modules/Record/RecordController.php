@@ -145,14 +145,49 @@ final class RecordController extends AbstractApiController
         }
 
         $header = fgetcsv($handle);
-        if ($header === false || $header === []) {
+        if ($header === false) {
             fclose($handle);
             return $this->respondError('CSV header row is missing.', 400);
         }
 
         /** @var list<string> $columns */
-        $columns = array_values(array_map('strval', $header));
-        $allowed = array_values(array_filter($columns, fn (string $col): bool => $this->isAllowedColumn($col)));
+        $columns = array_values(array_filter(
+            array_map('strval', $header),
+            static fn (string $col): bool => $col !== '',
+        ));
+        if ($columns === []) {
+            fclose($handle);
+            return $this->respondError('CSV header row is missing.', 400);
+        }
+
+        $importable = array_values(array_filter(
+            $columns,
+            fn (string $col): bool => $this->isImportableColumn($col),
+        ));
+        if ($importable === []) {
+            fclose($handle);
+            return $this->respondError('No importable columns found in CSV header.', 400);
+        }
+
+        $invalidDynamic = $this->findInvalidDynamicColumns($schemaId, $importable);
+        if ($invalidDynamic !== []) {
+            fclose($handle);
+            return $this->respondError(
+                'CSV contains unknown dynamic columns: ' . implode(', ', $invalidDynamic),
+                400,
+            );
+        }
+
+        /** @var array<string, int> $colToIndex */
+        $colToIndex = [];
+        foreach ($columns as $i => $col) {
+            $colToIndex[$col] = $i;
+        }
+
+        $allowed = array_values(array_filter(
+            $importable,
+            fn (string $col): bool => array_key_exists($col, $colToIndex),
+        ));
         if ($allowed === []) {
             fclose($handle);
             return $this->respondError('No importable columns found in CSV header.', 400);
@@ -161,16 +196,20 @@ final class RecordController extends AbstractApiController
         $inserted = 0;
         $skipped = 0;
 
-        DB::connection('tenant')->transaction(function () use ($schemaId, $handle, $columns, $allowed, &$inserted, &$skipped): void {
+        DB::connection('tenant')->transaction(function () use ($schemaId, $handle, $allowed, $colToIndex, &$inserted, &$skipped): void {
             $model = DynamicRecordModel::forSchema($schemaId);
-            while (($row = fgetcsv($handle)) !== false) {
-                if ($row === [null] || $row === []) {
+            while (true) {
+                $row = fgetcsv($handle);
+                if ($row === false) {
+                    break;
+                }
+                if (count($row) === 1 && ($row[0] ?? null) === null) {
                     continue;
                 }
                 $payload = [];
                 foreach ($allowed as $col) {
-                    $index = array_search($col, $columns, true);
-                    if ($index === false) {
+                    $index = $colToIndex[$col] ?? null;
+                    if (!is_int($index)) {
                         continue;
                     }
                     $payload[$col] = $row[$index] ?? null;
@@ -296,6 +335,52 @@ final class RecordController extends AbstractApiController
     private function isDynamicDataColumn(string $column): bool
     {
         return (bool) preg_match('/^data_\d+_\d+$/', $column);
+    }
+
+    private function isImportableColumn(string $column): bool
+    {
+        if ($this->isImportBlockedColumn($column)) {
+            return false;
+        }
+
+        if ($column === 'parent_record_id' || $column === 'record_outer_id') {
+            return true;
+        }
+
+        return $this->isDynamicDataColumn($column);
+    }
+
+    private function isImportBlockedColumn(string $column): bool
+    {
+        return $column === 'record_id'
+            || $column === 'regist_date'
+            || $column === 'update_date'
+            || $column === 'regist_user_id'
+            || $column === 'update_user_id';
+    }
+
+    /**
+     * @return list<string>
+     */
+    /**
+     * @param list<string> $columns
+     * @return list<string>
+     */
+    private function findInvalidDynamicColumns(int $schemaId, array $columns): array
+    {
+        $table = 'record_' . $schemaId;
+        $invalid = [];
+
+        foreach ($columns as $col) {
+            if (!$this->isDynamicDataColumn($col)) {
+                continue;
+            }
+            if (!\Schema::connection('tenant')->hasColumn($table, $col)) {
+                $invalid[] = $col;
+            }
+        }
+
+        return array_values(array_unique($invalid));
     }
 }
 

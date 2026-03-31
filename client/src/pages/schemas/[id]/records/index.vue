@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute, useRouter, useToast, definePageMeta } from '#imports'
+import { useRoute, useRouter, useToast, definePageMeta, useRuntimeConfig, useCookie } from '#imports'
 import RecordList from '~/components/domain/record/RecordList.vue'
 import RecordSearch from '~/components/domain/record/RecordSearch.vue'
 import {
@@ -19,6 +19,16 @@ definePageMeta({
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const runtime = useRuntimeConfig()
+
+function buildHeaders(): HeadersInit {
+  const tenantId = useCookie<string | null>('tenant_id').value
+  const token = useCookie<string | null>('auth_token').value
+  const headers: Record<string, string> = {}
+  if (tenantId) headers['X-Tenant-ID'] = tenantId
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  return headers
+}
 
 const schemaId = computed(() => String(route.params.id))
 const state = computed<RecordListQuery>(() =>
@@ -88,12 +98,14 @@ async function exportCsv() {
   try {
     exporting.value = true
     const params = new URLSearchParams(buildRecordListRouteQuery(state.value))
-    const url = `/api/v1/schemas/${encodeURIComponent(schemaId.value)}/records/export?${params.toString()}`
-    const res = await fetch(url, { credentials: 'include' })
-    if (!res.ok) {
-      throw new Error(`Export failed (${res.status})`)
-    }
-    const blob = await res.blob()
+    const blob = await $fetch<Blob>(
+      `/api/v1/schemas/${encodeURIComponent(schemaId.value)}/records/export?${params.toString()}`,
+      {
+        baseURL: runtime.public.apiBase,
+        headers: buildHeaders(),
+        responseType: 'blob',
+      },
+    )
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
     a.download = `records-schema-${schemaId.value}.csv`
@@ -119,17 +131,17 @@ async function importCsv() {
     const form = new FormData()
     form.append('file', importFile.value)
     const params = new URLSearchParams(buildRecordListRouteQuery(state.value))
-    const url = `/api/v1/schemas/${encodeURIComponent(schemaId.value)}/records/import?${params.toString()}`
-    const res = await fetch(url, {
-      method: 'POST',
-      body: form,
-      credentials: 'include',
-    })
-    const body = (await res.json().catch(() => null)) as
-      | { success: boolean; message?: string; data?: unknown }
-      | null
-    if (!res.ok || !body?.success) {
-      throw new Error(body?.message || `Import failed (${res.status})`)
+    const body = await $fetch<{ success: boolean; message?: string; data?: unknown }>(
+      `/api/v1/schemas/${encodeURIComponent(schemaId.value)}/records/import?${params.toString()}`,
+      {
+        method: 'POST',
+        baseURL: runtime.public.apiBase,
+        headers: buildHeaders(),
+        body: form,
+      },
+    )
+    if (!body?.success) {
+      throw new Error(body?.message || 'Import failed')
     }
     toast.add({
       title: 'Import success',
