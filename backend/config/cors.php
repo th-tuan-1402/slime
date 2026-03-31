@@ -13,9 +13,17 @@ return [
 
     'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    'allowed_origins' => array_filter(
-        array_map('trim', explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:3000')))
-    ),
+    'allowed_origins' => (static function (): array {
+        $clientPort = (string) env('CLIENT_PORT', '3000');
+        $defaultFrontendUrl = 'http://localhost:' . $clientPort;
+
+        $raw = (string) env(
+            'CORS_ALLOWED_ORIGINS',
+            env('FRONTEND_URL', env('CLIENT_URL', $defaultFrontendUrl))
+        );
+
+        return array_values(array_filter(array_map('trim', explode(',', $raw))));
+    })(),
 
     'allowed_origins_patterns' => [],
 

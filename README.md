@@ -31,6 +31,8 @@ You can override host ports without changing files:
 APP_PORT=18080 CLIENT_PORT=13000 make up
 ```
 
+When overriding `CLIENT_PORT`, the backend CORS/Sanctum defaults will automatically follow the same port (unless you explicitly set `CORS_ALLOWED_ORIGINS` / `SANCTUM_STATEFUL_DOMAINS`).
+
 ## Services
 
 | Service       | Container     | Port  |

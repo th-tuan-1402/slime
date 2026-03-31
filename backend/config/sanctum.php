@@ -13,7 +13,17 @@ return [
      *
      * For now, keep it configurable via env for Nuxt dev/prod.
      */
-    'stateful' => explode(',', (string) env('SANCTUM_STATEFUL_DOMAINS', 'localhost,localhost:3000,127.0.0.1,127.0.0.1:3000')),
+    'stateful' => (static function (): array {
+        $clientPort = (string) env('CLIENT_PORT', '3000');
+        $default = implode(',', [
+            'localhost',
+            'localhost:' . $clientPort,
+            '127.0.0.1',
+            '127.0.0.1:' . $clientPort,
+        ]);
+
+        return explode(',', (string) env('SANCTUM_STATEFUL_DOMAINS', $default));
+    })(),
 
     /*
      * Personal access token expiration in minutes. Null means never expires.

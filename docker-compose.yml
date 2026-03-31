@@ -17,6 +17,10 @@ services:
         condition: service_started
     environment:
       - APP_ENV=local
+      - CLIENT_PORT=${CLIENT_PORT:-3000}
+      - CLIENT_URL=http://localhost:${CLIENT_PORT:-3000}
+      - FRONTEND_URL=http://localhost:${CLIENT_PORT:-3000}
+      - CORS_ALLOWED_ORIGINS=http://localhost:${CLIENT_PORT:-3000}
       - DB_CONNECTION=pgsql
       - DB_HOST=db
       - DB_PORT=5432
