@@ -101,6 +101,12 @@ final class SchemaGroupAndSchemaApiTest extends TestCase
             $table->increments('field_id');
             $table->integer('db_schema_id');
             $table->string('field_name')->default('');
+            $table->integer('data_type')->default(0);
+            $table->integer('db_field_order')->default(0);
+            $table->integer('regist_user_id')->nullable();
+            $table->timestamp('regist_date')->nullable();
+            $table->integer('update_user_id')->nullable();
+            $table->timestamp('update_date')->nullable();
         });
     }
 
@@ -195,6 +201,8 @@ final class SchemaGroupAndSchemaApiTest extends TestCase
         Schema::connection('tenant')->hasTable("record_{$schemaA1Id}");
         $this->assertTrue(Schema::connection('tenant')->hasTable("record_{$schemaA1Id}"));
         $this->assertTrue(Schema::connection('tenant')->hasTable("record_{$schemaB1Id}"));
+        $this->assertTrue(Schema::connection('tenant')->hasColumn("record_{$schemaA1Id}", 'record_outer_id'));
+        $this->assertTrue(Schema::connection('tenant')->hasColumn("record_{$schemaB1Id}", 'record_outer_id'));
 
         $this->getJson("/api/v1/schemas?group_id={$groupAId}")
             ->assertStatus(200)

@@ -103,6 +103,45 @@ final class LocalTenantSeeder extends Seeder
                 $table->increments('field_id');
                 $table->integer('db_schema_id');
                 $table->string('field_name')->default('');
+                $table->integer('data_type')->default(0);
+                $table->integer('db_field_order')->default(0);
+                $table->integer('regist_user_id')->nullable();
+                $table->timestamp('regist_date')->nullable();
+                $table->integer('update_user_id')->nullable();
+                $table->timestamp('update_date')->nullable();
+            });
+        }
+
+        if (!Schema::connection('tenant')->hasTable('field_configs')) {
+            Schema::connection('tenant')->create('field_configs', static function (Blueprint $table): void {
+                $table->increments('config_id');
+                $table->integer('field_id');
+                $table->integer('is_required')->default(0);
+                $table->integer('max_length')->nullable();
+                $table->string('sequence_prefix')->nullable();
+                $table->integer('sequence_padding')->default(1);
+                $table->integer('sequence_next_value')->default(1);
+                $table->integer('sequence_step')->default(1);
+                $table->string('sequence_reset_policy')->default('none');
+                $table->integer('link_schema_id')->nullable();
+                $table->integer('link_display_field_id')->nullable();
+                $table->integer('update_user_id')->nullable();
+                $table->timestamp('update_date')->nullable();
+            });
+        }
+
+        if (!Schema::connection('tenant')->hasTable('field_selection')) {
+            Schema::connection('tenant')->create('field_selection', static function (Blueprint $table): void {
+                $table->increments('selection_id');
+                $table->integer('field_id');
+                $table->string('selection_value');
+                $table->string('selection_label');
+                $table->integer('selection_order')->default(0);
+                $table->integer('is_active')->default(1);
+                $table->integer('regist_user_id')->nullable();
+                $table->timestamp('regist_date')->nullable();
+                $table->integer('update_user_id')->nullable();
+                $table->timestamp('update_date')->nullable();
             });
         }
     }
