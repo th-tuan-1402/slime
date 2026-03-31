@@ -7,6 +7,7 @@ return [
         'auth' => 'Auth',
         'field' => 'Field',
         'health' => 'Health',
+        'record' => 'Record',
         'schema' => 'Schema',
     ],
 ];
