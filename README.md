@@ -22,12 +22,21 @@ make migrate
 
 The API will be available at `http://localhost:8080`, and the client at `http://localhost:3000` when running via Docker.
 
+### Custom ports (avoid local conflicts)
+
+You can override host ports without changing files:
+
+```bash
+# Example: run API on 18080 and client on 13000
+APP_PORT=18080 CLIENT_PORT=13000 make up
+```
+
 ## Services
 
 | Service       | Container     | Port  |
 |---------------|---------------|-------|
-| App (PHP)     | slime-app     | 8080  |
-| Client (Nuxt) | slime-client  | 3000  |
+| App (PHP)     | slime-app     | 8080 (default) |
+| Client (Nuxt) | slime-client  | 3000 (default) |
 | PostgreSQL    | slime-db      | 5432  |
 | Redis         | slime-redis   | 6379  |
 

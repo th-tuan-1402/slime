@@ -7,7 +7,7 @@ services:
       dockerfile: docker/app/Dockerfile
     container_name: slime-app
     ports:
-      - "8080:80"
+      - "${APP_PORT:-8080}:80"
     volumes:
       - ./backend:/var/www/html
     depends_on:
@@ -34,8 +34,6 @@ services:
   db:
     image: postgres:15-alpine
     container_name: slime-db
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_DB: slime
       POSTGRES_USER: slime
@@ -53,8 +51,6 @@ services:
   redis:
     image: redis:7-alpine
     container_name: slime-redis
-    ports:
-      - "6379:6379"
     volumes:
       - redis-data:/data
     networks:
@@ -65,13 +61,13 @@ services:
     container_name: slime-client
     working_dir: /app
     ports:
-      - "3000:3000"
+      - "${CLIENT_PORT:-3000}:3000"
     volumes:
       - ./client:/app
       - client-node-modules:/app/node_modules
     command: sh -c "npm install --legacy-peer-deps && npm run dev"
     environment:
-      - NUXT_PUBLIC_API_BASE=http://localhost:8080
+      - NUXT_PUBLIC_API_BASE=http://localhost:${APP_PORT:-8080}
       - NITRO_PORT=3000
     depends_on:
       - app
