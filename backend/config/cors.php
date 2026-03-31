@@ -17,12 +17,22 @@ return [
         $clientPort = (string) env('CLIENT_PORT', '3000');
         $defaultFrontendUrl = 'http://localhost:' . $clientPort;
 
-        $raw = (string) env(
-            'CORS_ALLOWED_ORIGINS',
-            env('FRONTEND_URL', env('CLIENT_URL', $defaultFrontendUrl))
-        );
+        $corsAllowedOrigins = env('CORS_ALLOWED_ORIGINS');
+        $frontendUrl = env('FRONTEND_URL');
+        $clientUrl = env('CLIENT_URL');
 
-        return array_values(array_filter(array_map('trim', explode(',', $raw))));
+        $raw = (string) ($corsAllowedOrigins ?? $frontendUrl ?? $clientUrl ?? $defaultFrontendUrl);
+
+        $appEnv = (string) env('APP_ENV', 'production');
+        $isProduction = $appEnv === 'production';
+        $usedFallbackDefault = $corsAllowedOrigins === null && $frontendUrl === null && $clientUrl === null;
+
+        return \App\Support\CorsAllowedOrigins::build(
+            raw: $raw,
+            isProduction: $isProduction,
+            supportsCredentials: true,
+            usedFallbackDefault: $usedFallbackDefault
+        );
     })(),
 
     'allowed_origins_patterns' => [],
