@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Auth;
 
+use App\Enums\RoleKey;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -15,6 +16,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property string $user_name
  * @property int $administrator_flag
  * @property int $delete_flag
+ * @property-read string $role Derived from {@see administrator_flag} for API authorization.
  */
 final class AuthUser extends Authenticatable
 {
@@ -41,5 +43,18 @@ final class AuthUser extends Authenticatable
         'administrator_flag' => 'int',
         'delete_flag' => 'int',
     ];
+
+    /**
+     * Map legacy Hanbai administrator flag to string roles expected by {@see \App\Http\AbstractApiController::authorizeRole()}.
+     */
+    public function getRoleAttribute(): string
+    {
+        if ((int) ($this->attributes['administrator_flag'] ?? 0) === 1) {
+            return RoleKey::Admin->value;
+        }
+
+        // Default seeded local account: broad access for import/export during development & QA.
+        return RoleKey::Manager->value;
+    }
 }
 

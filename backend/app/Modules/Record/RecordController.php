@@ -96,13 +96,17 @@ final class RecordController extends AbstractApiController
                 $items = $paginator->items();
                 if (!$headerWritten) {
                     $first = $items[0] ?? null;
-                    $columns = $first ? array_keys((array) $first) : ['record_id'];
+                    $columns = $first instanceof \Illuminate\Database\Eloquent\Model
+                        ? array_keys($first->getAttributes())
+                        : ($first !== null ? array_keys((array) $first) : ['record_id']);
                     fputcsv($out, $columns);
                     $headerWritten = true;
                 }
 
                 foreach ($items as $row) {
-                    $arr = (array) $row;
+                    $arr = $row instanceof \Illuminate\Database\Eloquent\Model
+                        ? $row->getAttributes()
+                        : (array) $row;
                     $line = [];
                     foreach ($columns as $col) {
                         $line[] = $arr[$col] ?? null;
@@ -220,7 +224,7 @@ final class RecordController extends AbstractApiController
                     continue;
                 }
 
-                $record = $model->newInstance([], true);
+                $record = $model->newInstance([], false);
                 foreach ($payload as $key => $value) {
                     $record->setAttribute($key, $value);
                 }
