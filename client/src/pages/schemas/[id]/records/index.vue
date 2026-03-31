@@ -21,7 +21,7 @@ const router = useRouter()
 const toast = useToast()
 const runtime = useRuntimeConfig()
 
-function buildHeaders(): HeadersInit {
+function buildHeaders(): Record<string, string> {
   const tenantId = useCookie<string | null>('tenant_id').value
   const token = useCookie<string | null>('auth_token').value
   const headers: Record<string, string> = {}
@@ -98,14 +98,15 @@ async function exportCsv() {
   try {
     exporting.value = true
     const params = new URLSearchParams(buildRecordListRouteQuery(state.value))
-    const blob = await $fetch<Blob>(
-      `/api/v1/schemas/${encodeURIComponent(schemaId.value)}/records/export?${params.toString()}`,
-      {
-        baseURL: runtime.public.apiBase,
-        headers: buildHeaders(),
-        responseType: 'blob',
-      },
-    )
+    const url = `${runtime.public.apiBase}/api/v1/schemas/${encodeURIComponent(schemaId.value)}/records/export?${params.toString()}`
+    const res = await fetch(url, {
+      credentials: 'include',
+      headers: buildHeaders(),
+    })
+    if (!res.ok) {
+      throw new Error(`Export failed (${res.status})`)
+    }
+    const blob = await res.blob()
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
     a.download = `records-schema-${schemaId.value}.csv`
@@ -131,17 +132,18 @@ async function importCsv() {
     const form = new FormData()
     form.append('file', importFile.value)
     const params = new URLSearchParams(buildRecordListRouteQuery(state.value))
-    const body = await $fetch<{ success: boolean; message?: string; data?: unknown }>(
-      `/api/v1/schemas/${encodeURIComponent(schemaId.value)}/records/import?${params.toString()}`,
-      {
-        method: 'POST',
-        baseURL: runtime.public.apiBase,
-        headers: buildHeaders(),
-        body: form,
-      },
-    )
-    if (!body?.success) {
-      throw new Error(body?.message || 'Import failed')
+    const url = `${runtime.public.apiBase}/api/v1/schemas/${encodeURIComponent(schemaId.value)}/records/import?${params.toString()}`
+    const res = await fetch(url, {
+      method: 'POST',
+      body: form,
+      credentials: 'include',
+      headers: buildHeaders(),
+    })
+    const body = (await res.json().catch(() => null)) as
+      | { success: boolean; message?: string; data?: unknown }
+      | null
+    if (!res.ok || !body?.success) {
+      throw new Error(body?.message || `Import failed (${res.status})`)
     }
     toast.add({
       title: 'Import success',
