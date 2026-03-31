@@ -34,6 +34,8 @@ services:
   db:
     image: postgres:15-alpine
     container_name: slime-db
+    ports:
+      - "${DB_PORT_HOST:-5432}:5432"
     environment:
       POSTGRES_DB: slime
       POSTGRES_USER: slime
@@ -51,6 +53,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: slime-redis
+    ports:
+      - "${REDIS_PORT_HOST:-6379}:6379"
     volumes:
       - redis-data:/data
     networks:
