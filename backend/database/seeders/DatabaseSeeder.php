@@ -16,6 +16,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(LocalTenantSeeder::class);
+
         $userId = 1001;
         $loginId = 'test-user';
         $plainPassword = 'p@ssw0rd';

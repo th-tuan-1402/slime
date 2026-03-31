@@ -1,6 +1,7 @@
 import { useCookie, useState } from '#imports'
 
-const DEFAULT_TENANT = 'tenant-a'
+// Must match backend `X-Tenant-ID` validation (7-char Crockford Base32).
+const DEFAULT_TENANT = '2345678'
 const TENANT_COOKIE_KEY = 'tenant_id'
 
 export interface TenantOption {
@@ -9,9 +10,9 @@ export interface TenantOption {
 }
 
 const TENANT_OPTIONS: TenantOption[] = [
-  { id: 'tenant-a', name: 'Tenant A' },
-  { id: 'tenant-b', name: 'Tenant B' },
-  { id: 'tenant-error', name: 'Tenant Error (demo)' },
+  { id: '2345678', name: 'Tenant A (local default)' },
+  { id: '2345679', name: 'Tenant B' },
+  { id: '234567a', name: 'Tenant Error (demo)' },
 ]
 
 export function useTenant() {
